@@ -266,3 +266,24 @@ button:disabled {
   padding: 40px 0;
   font-size: 15px;
 }
+
+/* Футер со ссылкой на репозиторий */
+.app-footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: #999;
+}
+
+.app-footer a {
+  color: #999;
+  text-decoration: none;
+}
+
+.app-footer a:visited {
+  color: #999;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
+}
