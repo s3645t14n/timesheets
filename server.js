@@ -32,11 +32,26 @@ function makeSlug(str) {
     'мая': 'may', 'июня': 'jun', 'июля': 'jul', 'августа': 'aug',
     'сентября': 'sep', 'октября': 'oct', 'ноября': 'nov', 'декабря': 'dec'
   };
+  const times = {
+    'утро': 'morning',
+    'вечер': 'evening',
+    'день': 'day',
+    'ночь': 'night'
+  };
+
   let result = str.toLowerCase();
+
+  // Транслитерация месяцев
   for (const [ru, en] of Object.entries(months)) {
     result = result.replace(ru, en);
   }
-  // Удаляем все символы, кроме букв, цифр и пробелов (защита от path traversal)
+
+  // Транслитерация времени суток
+  for (const [ru, en] of Object.entries(times)) {
+    result = result.replace(ru, en);
+  }
+
+  // Удаляем всё, кроме латиницы, цифр и пробелов (защита от path traversal)
   result = result.replace(/[^a-z0-9 ]/g, '');
   // Пробелы и повторы пробелов — в одиночное подчёркивание
   result = result.replace(/ +/g, '_');
