@@ -7,6 +7,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./config.json:/app/config.json:ro
+      - ./test.js:/app/test.js:ro
 
   nginx:
     image: nginx:alpine
