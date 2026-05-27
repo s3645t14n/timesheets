@@ -7,16 +7,15 @@ const DATA_DIR = path.join(__dirname, 'data');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const LOG_DIR = path.join(__dirname, 'logs');
 
+// Создаём папки, если их ещё нет
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR);
+}
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR);
 }
 
 const LOG_FILE = path.join(LOG_DIR, 'log.json');
-
-// Создаём папку для данных, если ещё нет
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR);
-}
 
 // Инициализация лога, если отсутствует
 if (!fs.existsSync(LOG_FILE)) {
@@ -38,11 +37,11 @@ function loadConfig() {
 }
 
 // Запись события в лог
-function logAction(action, inspector = '-') {
+function logAction(action, details = '') {
   const entry = {
     datetime: new Date().toISOString(),
     action: action,
-    inspector: inspector
+    details: details
   };
   try {
     const log = JSON.parse(fs.readFileSync(LOG_FILE, 'utf-8'));
@@ -244,6 +243,13 @@ function generateLog() {
     return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
+  // Ссылки на файлы табелей в столбце "Подробности" делаем кликабельными
+  function makeLinks(text) {
+    return text.replace(/\/api\/timesheets\/[^\s,]+/g, (match) => {
+      return `<a href="${match}" target="_blank">${match}</a>`;
+    });
+  }
+
   let html = `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -255,14 +261,14 @@ function generateLog() {
 <h1>Лог операций</h1>
 <p class="report-date">Сформирован: ${dateStr} в ${timeStr}</p>
 <table>
-<thead><tr><th>Дата и время</th><th>Операция</th><th>Пользователь</th></tr></thead>
+<thead><tr><th>Дата и время</th><th>Операция</th><th>Подробности</th></tr></thead>
 <tbody>`;
 
   for (const entry of logEntries) {
     html += `<tr>
       <td>${formatDT(entry.datetime)}</td>
       <td>${entry.action}</td>
-      <td>${entry.inspector}</td>
+      <td>${makeLinks(entry.details || '-')}</td>
     </tr>`;
   }
 
@@ -301,6 +307,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
+      const slugTime = makeSlug(body.time);
+      const slugPlace = makeSlug(body.workplace);
+      const filename = `${slugTime}_${slugPlace}.json`;
+
       if (body.overwrite) {
         // Перезапись существующего табеля
         const oldPath = path.join(DATA_DIR, body.overwrite);
@@ -308,14 +318,16 @@ const server = http.createServer(async (req, res) => {
           const newName = body.overwrite.replace('.json', '_deleted.json');
           fs.renameSync(oldPath, path.join(DATA_DIR, newName));
         }
-        logAction('Перезапись табеля', body.inspector);
+        logAction(
+          `Перезапись табеля: ${body.time}, место ${body.workplace}`,
+          `Файл: /api/timesheets/${filename}, проверяющий: ${body.inspector}`
+        );
       } else {
-        logAction('Создание табеля (незаполненный)', body.inspector);
+        logAction(
+          `Создание табеля (незаполненный): ${body.time}, место ${body.workplace}`,
+          `Файл: /api/timesheets/${filename}, проверяющий: ${body.inspector}`
+        );
       }
-
-      const slugTime = makeSlug(body.time);
-      const slugPlace = makeSlug(body.workplace);
-      const filename = `${slugTime}_${slugPlace}.json`;
 
       const data = {
         time: body.time,
@@ -360,10 +372,12 @@ const server = http.createServer(async (req, res) => {
       const existing = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       existing.scores = body.scores;
       fs.writeFileSync(filePath, JSON.stringify(existing, null, 2));
-      
-      // Логирование заполнения табеля
-      logAction('Заполнение табеля', existing.inspector);
-      
+
+      logAction(
+        `Заполнение табеля: ${existing.time}, место ${existing.workplace}`,
+        `Файл: /api/timesheets/${filename}, проверяющий: ${existing.inspector}`
+      );
+
       return sendJSON(res, { ok: true });
     } catch (err) {
       console.error('Ошибка сохранения табеля:', err.message);
@@ -383,9 +397,12 @@ const server = http.createServer(async (req, res) => {
       const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       const newName = filename.replace('.json', '_deleted.json');
       fs.renameSync(filePath, path.join(DATA_DIR, newName));
-      
-      logAction('Удаление табеля', data.inspector);
-      
+
+      logAction(
+        `Удаление табеля: ${data.time}, место ${data.workplace}`,
+        `Файл: /api/timesheets/${filename} (помечен удалённым), проверяющий: ${data.inspector}`
+      );
+
       return sendJSON(res, { ok: true });
     } catch (err) {
       console.error('Ошибка удаления табеля:', err.message);

@@ -146,14 +146,16 @@ select:focus, input:focus {
   margin-top: 20px;
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .buttons button {
   flex: 1;
-  padding: 14px;
+  min-width: 100px;
+  padding: 14px 10px;
   border: none;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -183,6 +185,15 @@ select:focus, input:focus {
 
 #btn-report:active {
   background: #2980b9;
+}
+
+#btn-log {
+  background: #6c757d;
+  color: #fff;
+}
+
+#btn-log:active {
+  background: #545b62;
 }
 
 button:disabled {
@@ -267,7 +278,7 @@ button:disabled {
   font-size: 15px;
 }
 
-/* Футер со ссылкой на репозиторий */
+/* --- Футер со ссылкой на репозиторий --- */
 .app-footer {
   text-align: center;
   padding: 16px;
@@ -286,31 +297,4 @@ button:disabled {
 
 .app-footer a:hover {
   text-decoration: underline;
-}
-
-#btn-log {
-  background: #6c757d;
-  color: #fff;
-}
-
-#btn-log:active {
-  background: #545b62;
-}
-
-.buttons {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.buttons button {
-  flex: 1;
-  min-width: 120px; /* чтобы кнопки не сжимались слишком сильно */
-  padding: 14px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
 }
