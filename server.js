@@ -5,7 +5,13 @@ const path = require('path');
 const PORT = 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const LOG_FILE = path.join(DATA_DIR, 'log.json');
+const LOG_DIR = path.join(__dirname, 'logs');
+
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR);
+}
+
+const LOG_FILE = path.join(LOG_DIR, 'log.json');
 
 // Создаём папку для данных, если ещё нет
 if (!fs.existsSync(DATA_DIR)) {
