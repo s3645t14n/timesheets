@@ -2,6 +2,7 @@
 const listEl = document.getElementById('timesheets-list');
 const btnNew = document.getElementById('btn-new');
 const btnReport = document.getElementById('btn-report');
+const btnLog = document.getElementById('btn-log');
 
 // Форматирование ISO-даты в читаемый вид "ДД.ММ.ГГГГ ЧЧ:ММ"
 function formatDate(isoString) {
@@ -19,15 +20,13 @@ async function loadList() {
   const res = await fetch('/api/timesheets');
   const timesheets = await res.json();
 
-  // Пустой список
   if (timesheets.length === 0) {
     listEl.innerHTML = '<div class="empty">Нет активных табелей</div>';
     return;
   }
 
-  // Сборка HTML-карточек табелей
+  // Сборка HTML-карточек табелей (уже отсортированы сервером)
   listEl.innerHTML = timesheets.map(ts => {
-    // Дополнительный класс для незаполненных табелей
     const incompleteClass = ts.complete ? '' : ' incomplete';
     const incompleteBadge = ts.complete ? '' : '<div class="incomplete-badge">не заполнен до конца</div>';
 
@@ -50,7 +49,6 @@ async function loadList() {
   // Обработчик клика по карточке — переход к редактированию
   listEl.querySelectorAll('.timesheet-item').forEach(item => {
     item.addEventListener('click', (e) => {
-      // Игнорируем клик по кнопке удаления
       if (e.target.classList.contains('btn-delete')) return;
       const filename = item.dataset.filename;
       window.location.href = `/edit.html?file=${encodeURIComponent(filename)}`;
@@ -68,16 +66,27 @@ async function loadList() {
       }
     });
   });
+
+  // Автоскролл вниз к последнему табелю и кнопкам
+  window.scrollTo({
+    top: document.body.scrollHeight,
+    behavior: 'smooth'
+  });
 }
 
-// Переход на страницу создания нового табеля
+// Кнопка "Новый табель"
 btnNew.addEventListener('click', () => {
   window.location.href = '/create.html';
 });
 
-// Открытие сводного отчёта в новом окне (для печати)
+// Кнопка "Выгрузить табели" — сводный отчёт
 btnReport.addEventListener('click', () => {
   window.open('/api/report', '_blank');
+});
+
+// Кнопка "Выгрузить лог" — лог операций
+btnLog.addEventListener('click', () => {
+  window.open('/api/log', '_blank');
 });
 
 // Первоначальная загрузка списка

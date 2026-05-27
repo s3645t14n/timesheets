@@ -5,10 +5,16 @@ const path = require('path');
 const PORT = 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const LOG_FILE = path.join(DATA_DIR, 'log.json');
 
 // Создаём папку для данных, если ещё нет
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR);
+}
+
+// Инициализация лога, если отсутствует
+if (!fs.existsSync(LOG_FILE)) {
+  fs.writeFileSync(LOG_FILE, '[]', 'utf-8');
 }
 
 // MIME-типы для отдачи статических файлов
@@ -23,6 +29,22 @@ const MIME = {
 function loadConfig() {
   const raw = fs.readFileSync(path.join(__dirname, 'config.json'), 'utf-8');
   return JSON.parse(raw);
+}
+
+// Запись события в лог
+function logAction(action, inspector = '-') {
+  const entry = {
+    datetime: new Date().toISOString(),
+    action: action,
+    inspector: inspector
+  };
+  try {
+    const log = JSON.parse(fs.readFileSync(LOG_FILE, 'utf-8'));
+    log.push(entry);
+    fs.writeFileSync(LOG_FILE, JSON.stringify(log, null, 2));
+  } catch (err) {
+    console.error('Ошибка записи лога:', err.message);
+  }
 }
 
 // Преобразование русскоязычной строки в безопасный slug для имени файла
@@ -89,6 +111,8 @@ function getActiveTimesheets() {
       console.error(`Ошибка чтения табеля ${file}:`, err.message);
     }
   }
+  // Сортировка от старых к новым (по возрастанию даты создания)
+  result.sort((a, b) => a.created.localeCompare(b.created));
   return result;
 }
 
@@ -140,15 +164,12 @@ function serveStatic(res, url) {
 function generateReport() {
   const config = loadConfig();
   const allTimesheets = getActiveTimesheets();
-  // Только полностью заполненные табели
   const timesheets = allTimesheets.filter(ts => ts.complete);
 
-  // Дата и время формирования отчёта
   const now = new Date();
   const dateStr = now.toLocaleDateString('ru-RU');
   const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-  // Группировка табелей по времени проверки
   const grouped = {};
   for (const time of config.times) {
     grouped[time] = [];
@@ -160,7 +181,6 @@ function generateReport() {
     }
   }
 
-  // Сборка HTML
   let html = `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -179,13 +199,11 @@ function generateReport() {
     html += `<h2>${time}</h2>`;
     html += `<table><thead><tr><th>Рабочее место</th>`;
 
-    // Заголовки столбцов — идентификаторы критериев
     for (const crit of config.criteria) {
       html += `<th>${crit.id}</th>`;
     }
     html += `</tr></thead><tbody>`;
 
-    // Строки таблицы: рабочие места с оценками
     for (const item of items) {
       html += `<tr><td>${item.workplace} (${item.inspector})</td>`;
       for (const crit of config.criteria) {
@@ -198,6 +216,51 @@ function generateReport() {
   }
 
   html += `</body></html>`;
+  return html;
+}
+
+// Генерация HTML лога операций для печати
+function generateLog() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ru-RU');
+  const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+  let logEntries = [];
+  try {
+    logEntries = JSON.parse(fs.readFileSync(LOG_FILE, 'utf-8'));
+  } catch (err) {
+    logEntries = [];
+  }
+
+  // Форматирование даты/времени для отображения
+  function formatDT(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  let html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Лог операций</title>
+<link rel="stylesheet" href="/print.css">
+</head>
+<body>
+<h1>Лог операций</h1>
+<p class="report-date">Сформирован: ${dateStr} в ${timeStr}</p>
+<table>
+<thead><tr><th>Дата и время</th><th>Операция</th><th>Пользователь</th></tr></thead>
+<tbody>`;
+
+  for (const entry of logEntries) {
+    html += `<tr>
+      <td>${formatDT(entry.datetime)}</td>
+      <td>${entry.action}</td>
+      <td>${entry.inspector}</td>
+    </tr>`;
+  }
+
+  html += `</tbody></table></body></html>`;
   return html;
 }
 
@@ -223,26 +286,27 @@ const server = http.createServer(async (req, res) => {
     return sendJSON(res, getActiveTimesheets());
   }
 
-  // --- API: создание нового табеля (сразу при вводе метаданных, до оценок) ---
+  // --- API: создание нового табеля ---
   if (url === '/api/timesheets' && method === 'POST') {
     const body = await parseBody(req);
 
-    // Базовая проверка обязательных полей
     if (!body.time || !body.inspector || !body.workplace) {
       return sendJSON(res, { error: 'Заполните все поля' }, 400);
     }
 
     try {
-      // Если указан файл для перезаписи — помечаем старый как удалённый
       if (body.overwrite) {
+        // Перезапись существующего табеля
         const oldPath = path.join(DATA_DIR, body.overwrite);
         if (fs.existsSync(oldPath)) {
           const newName = body.overwrite.replace('.json', '_deleted.json');
           fs.renameSync(oldPath, path.join(DATA_DIR, newName));
         }
+        logAction('Перезапись табеля', body.inspector);
+      } else {
+        logAction('Создание табеля (незаполненный)', body.inspector);
       }
 
-      // Формируем имя файла из времени и рабочего места
       const slugTime = makeSlug(body.time);
       const slugPlace = makeSlug(body.workplace);
       const filename = `${slugTime}_${slugPlace}.json`;
@@ -278,7 +342,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // --- API: сохранение оценок табеля ---
+  // --- API: сохранение оценок табеля (заполнение) ---
   if (url.startsWith('/api/timesheets/') && method === 'PUT') {
     const filename = url.replace('/api/timesheets/', '').split('?')[0];
     const filePath = path.join(DATA_DIR, filename);
@@ -290,6 +354,10 @@ const server = http.createServer(async (req, res) => {
       const existing = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       existing.scores = body.scores;
       fs.writeFileSync(filePath, JSON.stringify(existing, null, 2));
+      
+      // Логирование заполнения табеля
+      logAction('Заполнение табеля', existing.inspector);
+      
       return sendJSON(res, { ok: true });
     } catch (err) {
       console.error('Ошибка сохранения табеля:', err.message);
@@ -305,8 +373,13 @@ const server = http.createServer(async (req, res) => {
       if (!fs.existsSync(filePath)) {
         return sendJSON(res, { error: 'Not found' }, 404);
       }
+      // Получаем данные табеля для логирования перед удалением
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       const newName = filename.replace('.json', '_deleted.json');
       fs.renameSync(filePath, path.join(DATA_DIR, newName));
+      
+      logAction('Удаление табеля', data.inspector);
+      
       return sendJSON(res, { ok: true });
     } catch (err) {
       console.error('Ошибка удаления табеля:', err.message);
@@ -314,19 +387,26 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // --- API: получение конфига (критерии + времена) ---
+  // --- API: получение конфига ---
   if (url === '/api/config' && method === 'GET') {
     return sendJSON(res, loadConfig());
   }
 
-  // --- API: сводный отчёт (HTML для печати, только заполненные) ---
+  // --- API: сводный отчёт (HTML для печати) ---
   if (url === '/api/report' && method === 'GET') {
     const html = generateReport();
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(html);
   }
 
-  // --- Статические файлы (всё остальное) ---
+  // --- API: лог операций (HTML для печати) ---
+  if (url === '/api/log' && method === 'GET') {
+    const html = generateLog();
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    return res.end(html);
+  }
+
+  // --- Статические файлы ---
   serveStatic(res, url);
 });
 
