@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Редактирование табеля</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Заголовок-ссылка на главную -->
+  <header class="app-header"><a href="/">Демо-экзамен 2026</a></header>
+
+  <div class="container">
+    <h1>Оценки</h1>
+    <!-- Метаданные табеля -->
+    <div id="meta"></div>
+    <!-- Список критериев с радиокнопками -->
+    <div id="criteria-list"></div>
+    <!-- Кнопки действий -->
+    <div class="buttons">
+      <button id="btn-cancel">Отмена</button>
+      <button id="btn-save" disabled>Сохранить табель</button>
+    </div>
+  </div>
+  <script src="/edit.js"></script>
+</body>
+</html>

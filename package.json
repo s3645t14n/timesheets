@@ -1,0 +1,10 @@
+{
+  "name": "simple-timesheets",
+  "version": "1.0.0",
+  "description": "Минималистичная система проверочных табелей",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "ISC"
+}
