@@ -7,23 +7,35 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <!-- Заголовок-ссылка на главную -->
-  <header class="app-header"><a href="/">Демо-экзамен 2026</a></header>
+  <!-- Заголовок-ссылка на главную с кнопкой обновления -->
+  <header class="app-header">
+    <a href="/">Демо-экзамен 2026</a>
+    <button class="btn-refresh" onclick="location.reload()" title="Обновить">↻</button>
+  </header>
 
   <div class="container">
     <h1>Табели проверок</h1>
-    <!-- Список табелей заполняется динамически -->
-    <div id="timesheets-list"></div>
-    <!-- Кнопки действий -->
+
+    <!-- Кнопки действий (вверху) -->
     <div class="buttons">
       <button id="btn-new">Новый табель</button>
       <button id="btn-report">Выгрузить табели</button>
       <button id="btn-log">Выгрузить лог</button>
     </div>
-    <!-- Опасная зона -->
+
+    <!-- Список табелей заполняется динамически -->
+    <div id="timesheets-list"></div>
+
+    <!-- Опасная зона (внизу) -->
     <div class="danger-zone">
       <button id="btn-delete-all">Удалить все табели</button>
     </div>
+  </div>
+
+  <!-- Плавающие кнопки скролла -->
+  <div class="scroll-buttons">
+    <button id="btn-scroll-top" title="В начало">↑</button>
+    <button id="btn-scroll-bottom" title="В конец">↓</button>
   </div>
 
   <!-- Футер со ссылкой на репозиторий -->

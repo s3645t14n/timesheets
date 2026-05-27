@@ -1,4 +1,4 @@
-/* Общие сбросы и базовый стиль страницы под мобильное разрешение */
+/* Общие сбросы и базовый стиль страницы */
 * {
   margin: 0;
   padding: 0;
@@ -16,12 +16,25 @@ body {
   min-height: 100vh;
 }
 
+/* --- Адаптация под десктоп --- */
+@media (min-width: 768px) {
+  body {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    max-width: 800px;
+  }
+}
+
 /* Заголовок приложения — фиксированный вверху */
 .app-header {
   background: #2c3e50;
   color: #fff;
   text-align: center;
-  padding: 10px 0;
+  padding: 10px 16px;
   font-size: 16px;
   font-weight: bold;
   letter-spacing: 1px;
@@ -32,6 +45,21 @@ body {
   width: 100%;
   max-width: 480px;
   z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .app-header {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-header {
+    max-width: 800px;
+  }
 }
 
 .app-header a {
@@ -43,10 +71,33 @@ body {
   color: #fff;
 }
 
+/* Кнопка обновления в шапке */
+.btn-refresh {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.btn-refresh:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-refresh:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* Основной контейнер */
 .container {
   padding: 16px;
-  padding-top: 56px; /* высота шапки + отступ */
+  padding-top: 56px;
+  padding-bottom: 80px; /* место для плавающих кнопок */
 }
 
 h1 {
@@ -151,7 +202,7 @@ select:focus, input:focus {
 
 /* --- Общие кнопки действий --- */
 .buttons {
-  margin-top: 20px;
+  margin-bottom: 20px;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -286,28 +337,7 @@ button:disabled {
   font-size: 15px;
 }
 
-/* --- Футер со ссылкой на репозиторий --- */
-.app-footer {
-  text-align: center;
-  padding: 16px;
-  font-size: 12px;
-  color: #999;
-}
-
-.app-footer a {
-  color: #999;
-  text-decoration: none;
-}
-
-.app-footer a:visited {
-  color: #999;
-}
-
-.app-footer a:hover {
-  text-decoration: underline;
-}
-
-/* Опасная зона */
+/* --- Опасная зона --- */
 .danger-zone {
   margin-top: 24px;
   padding-top: 16px;
@@ -328,4 +358,55 @@ button:disabled {
 
 #btn-delete-all:active {
   background: #ffeaea;
+}
+
+/* --- Плавающие кнопки скролла --- */
+.scroll-buttons {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 200;
+}
+
+.scroll-buttons button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: #2c3e50;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scroll-buttons button:active {
+  background: #1a252f;
+}
+
+/* --- Футер со ссылкой на репозиторий --- */
+.app-footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: #999;
+}
+
+.app-footer a {
+  color: #999;
+  text-decoration: none;
+}
+
+.app-footer a:visited {
+  color: #999;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
 }

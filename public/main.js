@@ -4,6 +4,8 @@ const btnNew = document.getElementById('btn-new');
 const btnReport = document.getElementById('btn-report');
 const btnLog = document.getElementById('btn-log');
 const btnDeleteAll = document.getElementById('btn-delete-all');
+const btnScrollTop = document.getElementById('btn-scroll-top');
+const btnScrollBottom = document.getElementById('btn-scroll-bottom');
 
 // Форматирование ISO-даты в читаемый вид "ДД.ММ.ГГГГ ЧЧ:ММ"
 function formatDate(isoString) {
@@ -26,7 +28,7 @@ async function loadList() {
     return;
   }
 
-  // Сборка HTML-карточек табелей (уже отсортированы сервером)
+  // Сборка HTML-карточек табелей (новые вверху, сервер уже отсортировал)
   listEl.innerHTML = timesheets.map(ts => {
     const incompleteClass = ts.complete ? '' : ' incomplete';
     const incompleteBadge = ts.complete ? '' : '<div class="incomplete-badge">не заполнен до конца</div>';
@@ -67,12 +69,6 @@ async function loadList() {
       }
     });
   });
-
-  // Автоскролл вниз к последнему табелю и кнопкам
-  window.scrollTo({
-    top: document.body.scrollHeight,
-    behavior: 'smooth'
-  });
 }
 
 // Кнопка "Новый табель"
@@ -102,6 +98,15 @@ btnDeleteAll.addEventListener('click', async () => {
   }
 
   loadList();
+});
+
+// Плавающие кнопки скролла
+btnScrollTop.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+btnScrollBottom.addEventListener('click', () => {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 });
 
 // Первоначальная загрузка списка

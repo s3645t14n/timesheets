@@ -116,8 +116,8 @@ function getActiveTimesheets() {
       console.error(`Ошибка чтения табеля ${file}:`, err.message);
     }
   }
-  // Сортировка от старых к новым (по возрастанию даты создания)
-  result.sort((a, b) => a.created.localeCompare(b.created));
+  // Сортировка от новых к старым (по убыванию даты создания)
+  result.sort((a, b) => b.created.localeCompare(a.created));
   return result;
 }
 
@@ -172,8 +172,8 @@ function generateReport() {
   const timesheets = allTimesheets.filter(ts => ts.complete);
 
   const now = new Date();
-  const dateStr = now.toLocaleDateString('ru-RU');
-  const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   const grouped = {};
   for (const time of config.times) {
@@ -227,8 +227,8 @@ function generateReport() {
 // Генерация HTML лога операций для печати
 function generateLog() {
   const now = new Date();
-  const dateStr = now.toLocaleDateString('ru-RU');
-  const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   let logEntries = [];
   try {
@@ -240,10 +240,16 @@ function generateLog() {
   // Форматирование даты/времени для отображения
   function formatDT(iso) {
     const d = new Date(iso);
-    return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
   }
 
-  // Ссылки на файлы табелей в столбце "Подробности" делаем кликабельными
+  // Ссылки на файлы табелей делаем кликабельными
   function makeLinks(text) {
     return text.replace(/\/api\/timesheets\/[^\s,]+/g, (match) => {
       return `<a href="${match}" target="_blank">${match}</a>`;
@@ -402,7 +408,6 @@ const server = http.createServer(async (req, res) => {
       if (!fs.existsSync(filePath)) {
         return sendJSON(res, { error: 'Not found' }, 404);
       }
-      // Получаем данные табеля для логирования перед удалением
       const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       const newName = filename.replace('.json', '_deleted.json');
       fs.renameSync(filePath, path.join(DATA_DIR, newName));
