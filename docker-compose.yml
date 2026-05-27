@@ -4,14 +4,17 @@ services:
   app:
     build: .
     restart: unless-stopped
+    environment:
+      - TZ=Europe/Moscow
     volumes:
       - ./data:/app/data
       - ./config.json:/app/config.json:ro
-      - ./test.js:/app/test.js:ro
 
   nginx:
     image: nginx:alpine
     restart: unless-stopped
+    environment:
+      - TZ=Europe/Moscow
     ports:
       - "80:80"
     volumes:
