@@ -172,6 +172,7 @@ function generateReport() {
   const timesheets = allTimesheets.filter(ts => ts.complete);
 
   const now = new Date();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -195,7 +196,7 @@ function generateReport() {
 </head>
 <body>
 <h1>Сводный отчёт по табелям</h1>
-<p class="report-date">Сформирован: ${dateStr} в ${timeStr}</p>`;
+<p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>`;
 
   for (const time of config.times) {
     const items = grouped[time];
@@ -227,6 +228,7 @@ function generateReport() {
 // Генерация HTML лога операций для печати
 function generateLog() {
   const now = new Date();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -265,7 +267,7 @@ function generateLog() {
 </head>
 <body>
 <h1>Лог операций</h1>
-<p class="report-date">Сформирован: ${dateStr} в ${timeStr}</p>
+<p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>
 <table>
 <thead><tr><th>Дата и время</th><th>Операция</th><th>Подробности</th></tr></thead>
 <tbody>`;
