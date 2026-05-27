@@ -285,6 +285,15 @@ const server = http.createServer(async (req, res) => {
   if (url === '/api/timesheets/check-duplicate' && method === 'POST') {
     const body = await parseBody(req);
     const duplicate = findDuplicate(body.time, body.workplace);
+
+    // Логирование попытки создания дубликата
+    if (duplicate) {
+      logAction(
+        `Попытка создания дубликата (отклонено): ${body.time}, место ${body.workplace}`,
+        `Существующий табель: /api/timesheets/${duplicate.filename}, проверяющий: ${duplicate.inspector}, заполнен: ${duplicate.complete ? 'да' : 'нет'}`
+      );
+    }
+
     return sendJSON(res, {
       duplicate: !!duplicate,
       existingFile: duplicate ? duplicate.filename : null,
