@@ -7,41 +7,30 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <!-- Заголовок-ссылка на главную с кнопкой обновления -->
-  <header class="app-header">
-    <a href="/">Демо-экзамен 2026</a>
-    <button class="btn-refresh" onclick="location.reload()" title="Обновить">↻</button>
-  </header>
+  <!--HEADER-->
 
-  <div class="container">
+  <main class="container">
     <h1>Табели проверок</h1>
 
-    <!-- Кнопки действий (вверху) -->
     <div class="buttons">
       <button id="btn-new">Новый табель</button>
       <button id="btn-report">Выгрузить табели</button>
       <button id="btn-log">Выгрузить лог</button>
     </div>
 
-    <!-- Список табелей заполняется динамически -->
-    <div id="timesheets-list"></div>
+    <div id="timesheets-list" class="timesheets-grid"></div>
 
-    <!-- Опасная зона (внизу) -->
     <div class="danger-zone">
       <button id="btn-delete-all">Удалить все табели</button>
     </div>
-  </div>
+  </main>
 
-  <!-- Плавающие кнопки скролла -->
   <div class="scroll-buttons">
     <button id="btn-scroll-top" title="В начало">↑</button>
     <button id="btn-scroll-bottom" title="В конец">↓</button>
   </div>
 
-  <!-- Футер со ссылкой на репозиторий -->
-  <footer class="app-footer">
-    <a href="https://github.com/s3645t14n/timesheets" target="_blank">github.com/s3645t14n/timesheets</a>
-  </footer>
+  <!--FOOTER-->
 
   <script src="/main.js"></script>
 </body>

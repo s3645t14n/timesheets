@@ -148,7 +148,7 @@ function sendJSON(res, data, code = 200) {
   res.end(JSON.stringify(data));
 }
 
-// Отдача статического файла (HTML, CSS, JS)
+// Отдача статического файла с подстановкой header и footer
 function serveStatic(res, url) {
   const cleanUrl = url.split('?')[0];
   const filePath = path.join(PUBLIC_DIR, cleanUrl === '/' ? 'index.html' : cleanUrl);
@@ -160,7 +160,19 @@ function serveStatic(res, url) {
     return;
   }
 
-  const content = fs.readFileSync(filePath);
+  let content = fs.readFileSync(filePath, 'utf-8');
+
+  // Подстановка header и footer для HTML-файлов
+  if (ext === '.html') {
+    const header = fs.existsSync(path.join(PUBLIC_DIR, 'header.html'))
+      ? fs.readFileSync(path.join(PUBLIC_DIR, 'header.html'), 'utf-8')
+      : '';
+    const footer = fs.existsSync(path.join(PUBLIC_DIR, 'footer.html'))
+      ? fs.readFileSync(path.join(PUBLIC_DIR, 'footer.html'), 'utf-8')
+      : '';
+    content = content.replace('<!--HEADER-->', header).replace('<!--FOOTER-->', footer);
+  }
+
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'text/plain' });
   res.end(content);
 }
