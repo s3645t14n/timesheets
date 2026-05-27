@@ -172,7 +172,7 @@ function generateReport() {
   const timesheets = allTimesheets.filter(ts => ts.complete);
 
   const now = new Date();
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || 'не определён';
   const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -228,7 +228,7 @@ function generateReport() {
 // Генерация HTML лога операций для печати
 function generateLog() {
   const now = new Date();
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || 'не определён';
   const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
