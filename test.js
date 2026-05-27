@@ -91,7 +91,7 @@ async function main() {
   await createAndFill();
 
   // Остальные по таймеру
-  setInterval(createAndFill, 30000);
+  setInterval(createAndFill, 2000);
 }
 
 main();
