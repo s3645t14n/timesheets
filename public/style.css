@@ -306,3 +306,26 @@ button:disabled {
 .app-footer a:hover {
   text-decoration: underline;
 }
+
+/* Опасная зона */
+.danger-zone {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+#btn-delete-all {
+  width: 100%;
+  padding: 14px;
+  border: 2px solid #e74c3c;
+  border-radius: 8px;
+  background: #fff;
+  color: #e74c3c;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#btn-delete-all:active {
+  background: #ffeaea;
+}

@@ -3,6 +3,7 @@ const listEl = document.getElementById('timesheets-list');
 const btnNew = document.getElementById('btn-new');
 const btnReport = document.getElementById('btn-report');
 const btnLog = document.getElementById('btn-log');
+const btnDeleteAll = document.getElementById('btn-delete-all');
 
 // Форматирование ISO-даты в читаемый вид "ДД.ММ.ГГГГ ЧЧ:ММ"
 function formatDate(isoString) {
@@ -87,6 +88,20 @@ btnReport.addEventListener('click', () => {
 // Кнопка "Выгрузить лог" — лог операций
 btnLog.addEventListener('click', () => {
   window.open('/api/log', '_blank');
+});
+
+// Кнопка "Удалить все табели"
+btnDeleteAll.addEventListener('click', async () => {
+  if (!confirm('Вы уверены, что хотите удалить ВСЕ табели?\n\nЭто действие нельзя отменить. Все файлы будут помечены как удалённые.')) return;
+
+  const res = await fetch('/api/timesheets');
+  const timesheets = await res.json();
+
+  for (const ts of timesheets) {
+    await fetch(`/api/timesheets/${encodeURIComponent(ts.filename)}`, { method: 'DELETE' });
+  }
+
+  loadList();
 });
 
 // Первоначальная загрузка списка
