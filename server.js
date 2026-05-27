@@ -400,7 +400,7 @@ const server = http.createServer(async (req, res) => {
 
       logAction(
         `Удаление табеля: ${data.time}, место ${data.workplace}`,
-        `Файл: /api/timesheets/${filename} (помечен удалённым), проверяющий: ${data.inspector}`
+        `Файл: /api/timesheets/${newName} (помечен удалённым), проверяющий: ${data.inspector}`
       );
 
       return sendJSON(res, { ok: true });
