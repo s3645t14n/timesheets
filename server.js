@@ -68,32 +68,27 @@ function makeSlug(str) {
 
   let result = str.toLowerCase();
 
-  // Транслитерация месяцев
   for (const [ru, en] of Object.entries(months)) {
     result = result.replace(ru, en);
   }
 
-  // Транслитерация времени суток
   for (const [ru, en] of Object.entries(times)) {
     result = result.replace(ru, en);
   }
 
-  // Удаляем всё, кроме латиницы, цифр и пробелов (защита от path traversal)
   result = result.replace(/[^a-z0-9 ]/g, '');
-  // Пробелы и повторы пробелов — в одиночное подчёркивание
   result = result.replace(/ +/g, '_');
-  // Убираем крайние подчёркивания
   result = result.replace(/^_|_$/g, '');
   return result;
 }
 
-// Проверка, заполнен ли табель полностью (все критерии имеют оценку)
+// Проверка, заполнен ли табель полностью
 function isComplete(timesheet, criteria) {
   if (!timesheet.scores || Object.keys(timesheet.scores).length === 0) return false;
   return criteria.every(crit => timesheet.scores.hasOwnProperty(crit.id));
 }
 
-// Получение списка активных табелей (без помеченных как удалённые)
+// Получение списка активных табелей
 function getActiveTimesheets() {
   const config = loadConfig();
   const files = fs.readdirSync(DATA_DIR);
@@ -116,18 +111,17 @@ function getActiveTimesheets() {
       console.error(`Ошибка чтения табеля ${file}:`, err.message);
     }
   }
-  // Сортировка от новых к старым (по убыванию даты создания)
   result.sort((a, b) => b.created.localeCompare(a.created));
   return result;
 }
 
-// Поиск дубликата по связке "время проверки + рабочее место"
+// Поиск дубликата
 function findDuplicate(time, workplace) {
   const timesheets = getActiveTimesheets();
   return timesheets.find(ts => ts.time === time && ts.workplace === workplace) || null;
 }
 
-// Чтение тела POST/PUT-запроса как JSON
+// Чтение тела запроса как JSON
 function parseBody(req) {
   return new Promise((resolve) => {
     let body = '';
@@ -162,7 +156,6 @@ function serveStatic(res, url) {
 
   let content = fs.readFileSync(filePath, 'utf-8');
 
-  // Подстановка header и footer для HTML-файлов
   if (ext === '.html') {
     const header = fs.existsSync(path.join(PUBLIC_DIR, 'header.html'))
       ? fs.readFileSync(path.join(PUBLIC_DIR, 'header.html'), 'utf-8')
@@ -177,14 +170,14 @@ function serveStatic(res, url) {
   res.end(content);
 }
 
-// Генерация HTML сводного отчёта для печати (только заполненные табели)
+// Генерация HTML сводного отчёта
 function generateReport() {
   const config = loadConfig();
   const allTimesheets = getActiveTimesheets();
   const timesheets = allTimesheets.filter(ts => ts.complete);
 
   const now = new Date();
-  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || 'не определён';
+  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
   const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -220,13 +213,14 @@ function generateReport() {
     for (const crit of config.criteria) {
       html += `<th>${crit.id}</th>`;
     }
-    html += `</tr></thead><tbody>`;
+    html += `<th>Итог</th></tr></thead><tbody>`;
 
     for (const item of items) {
       html += `<tr><td>${item.workplace} (${item.inspector})</td>`;
       for (const crit of config.criteria) {
         html += `<td>${item.scores[crit.id] ?? '-'}</td>`;
       }
+      html += `<td>${item.totalScore != null ? item.totalScore.toFixed(1) : '—'}</td>`;
       html += `</tr>`;
     }
 
@@ -237,10 +231,10 @@ function generateReport() {
   return html;
 }
 
-// Генерация HTML лога операций для печати
+// Генерация HTML лога операций
 function generateLog() {
   const now = new Date();
-  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || 'не определён';
+  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
   const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -251,7 +245,6 @@ function generateLog() {
     logEntries = [];
   }
 
-  // Форматирование даты/времени для отображения
   function formatDT(iso) {
     const d = new Date(iso);
     const day = String(d.getDate()).padStart(2, '0');
@@ -263,7 +256,6 @@ function generateLog() {
     return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
   }
 
-  // Ссылки на файлы табелей делаем кликабельными
   function makeLinks(text) {
     return text.replace(/\/api\/timesheets\/[^\s,]+/g, (match) => {
       return `<a href="${match}" target="_blank">${match}</a>`;
@@ -301,12 +293,11 @@ const server = http.createServer(async (req, res) => {
   const url = req.url;
   const method = req.method;
 
-  // --- API: проверка дубликата перед созданием ---
+  // --- API: проверка дубликата ---
   if (url === '/api/timesheets/check-duplicate' && method === 'POST') {
     const body = await parseBody(req);
     const duplicate = findDuplicate(body.time, body.workplace);
 
-    // Логирование попытки создания дубликата
     if (duplicate) {
       logAction(
         `Попытка создания дубликата (отклонено): ${body.time}, место ${body.workplace}`,
@@ -322,12 +313,12 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // --- API: список активных табелей ---
+  // --- API: список табелей ---
   if (url === '/api/timesheets' && method === 'GET') {
     return sendJSON(res, getActiveTimesheets());
   }
 
-  // --- API: создание нового табеля ---
+  // --- API: создание табеля ---
   if (url === '/api/timesheets' && method === 'POST') {
     const body = await parseBody(req);
 
@@ -341,7 +332,6 @@ const server = http.createServer(async (req, res) => {
       const filename = `${slugTime}_${slugPlace}.json`;
 
       if (body.overwrite) {
-        // Перезапись существующего табеля
         const oldPath = path.join(DATA_DIR, body.overwrite);
         if (fs.existsSync(oldPath)) {
           const newName = body.overwrite.replace('.json', '_deleted.json');
@@ -389,7 +379,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // --- API: сохранение оценок табеля (заполнение) ---
+  // --- API: сохранение оценок ---
   if (url.startsWith('/api/timesheets/') && method === 'PUT') {
     const filename = url.replace('/api/timesheets/', '').split('?')[0];
     const filePath = path.join(DATA_DIR, filename);
@@ -400,11 +390,15 @@ const server = http.createServer(async (req, res) => {
       const body = await parseBody(req);
       const existing = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       existing.scores = body.scores;
+      if (body.totalScore != null) {
+        existing.totalScore = body.totalScore;
+      }
+
       fs.writeFileSync(filePath, JSON.stringify(existing, null, 2));
 
       logAction(
         `Заполнение табеля: ${existing.time}, место ${existing.workplace}`,
-        `Файл: /api/timesheets/${filename}, проверяющий: ${existing.inspector}`
+        `Файл: /api/timesheets/${filename}, итог: ${existing.totalScore != null ? existing.totalScore.toFixed(1) : '—'}, проверяющий: ${existing.inspector}`
       );
 
       return sendJSON(res, { ok: true });
@@ -414,7 +408,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // --- API: удаление табеля (пометка как неактивный) ---
+  // --- API: удаление табеля ---
   if (url.startsWith('/api/timesheets/') && method === 'DELETE') {
     const filename = url.replace('/api/timesheets/', '').split('?')[0];
     const filePath = path.join(DATA_DIR, filename);
@@ -438,19 +432,19 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // --- API: получение конфига ---
+  // --- API: конфиг ---
   if (url === '/api/config' && method === 'GET') {
     return sendJSON(res, loadConfig());
   }
 
-  // --- API: сводный отчёт (HTML для печати) ---
+  // --- API: сводный отчёт ---
   if (url === '/api/report' && method === 'GET') {
     const html = generateReport();
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(html);
   }
 
-  // --- API: лог операций (HTML для печати) ---
+  // --- API: лог ---
   if (url === '/api/log' && method === 'GET') {
     const html = generateLog();
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -461,7 +455,6 @@ const server = http.createServer(async (req, res) => {
   serveStatic(res, url);
 });
 
-// Запуск сервера
 server.listen(PORT, () => {
   console.log(`Сервер запущен: http://localhost:${PORT}`);
 });

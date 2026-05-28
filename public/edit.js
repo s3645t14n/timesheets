@@ -40,7 +40,7 @@ function renderCriteria() {
 
     return `
       <div class="criterion">
-        <div class="criterion-name">Критерий ${crit.id}</div>
+        <div class="criterion-name">Критерий ${crit.id} <span class="max-score">(макс. ${crit.maxScore} балла)</span></div>
         <div class="criterion-desc">${crit.description}</div>
         <div class="radio-group">
           <div class="radio-option">
@@ -65,18 +65,20 @@ function renderCriteria() {
   });
 }
 
-// Проверка, все ли критерии оценены, и подсветка оценённых (один проход)
+// Проверка, все ли критерии оценены, подсветка и расчёт итогового балла
 function checkAllScored() {
   let allScored = true;
+  let totalScore = 0;
 
   configData.criteria.forEach(crit => {
-    // Ищем критерий внутри контейнера критериев (защита от отсутствия элемента)
     const radio = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]:checked`);
     const criterionEl = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]`)?.closest('.criterion');
 
     if (criterionEl) {
       if (radio) {
         criterionEl.classList.add('scored');
+        const multiplier = parseInt(radio.value) / 2;
+        totalScore += crit.maxScore * multiplier;
       } else {
         criterionEl.classList.remove('scored');
         allScored = false;
@@ -86,32 +88,38 @@ function checkAllScored() {
     }
   });
 
-  // Кнопка сохранения активна только когда все критерии оценены
   btnSave.disabled = !allScored;
+
+  const totalEl = document.getElementById('total-score');
+  if (totalEl) {
+    totalEl.textContent = `Итог: ${totalScore.toFixed(1)}`;
+  }
 }
 
 // Сохранение оценок на сервер
 btnSave.addEventListener('click', async () => {
   const scores = {};
+  let totalScore = 0;
+
   configData.criteria.forEach(crit => {
     const checked = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]:checked`);
-    scores[crit.id] = parseInt(checked.value);
+    const value = parseInt(checked.value);
+    scores[crit.id] = value;
+    totalScore += crit.maxScore * (value / 2);
   });
 
   const res = await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scores })
+    body: JSON.stringify({ scores, totalScore })
   });
 
-  // Если табель был удалён за время редактирования — сообщаем и уходим на главную
   if (!res.ok) {
     alert('Этот табель был удалён другим пользователем. Сохранение невозможно.');
     window.location.href = '/';
     return;
   }
 
-  // Возврат на главный экран после сохранения
   window.location.href = '/';
 });
 

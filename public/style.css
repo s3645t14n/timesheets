@@ -470,3 +470,32 @@ button:disabled {
 .btn-guide:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+.max-score {
+  font-size: 12px;
+  color: #999;
+  font-weight: normal;
+}
+
+/* Плавающее окошко итогового балла */
+.total-score-widget {
+  position: fixed;
+  top: 52px;
+  right: 16px;
+  background: #2c3e50;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 150;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Бейдж итогового балла на карточке табеля */
+.total-badge {
+  font-size: 13px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-top: 4px;
+}

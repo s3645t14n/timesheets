@@ -28,7 +28,6 @@ async function loadList() {
     return;
   }
 
-  // Сборка HTML-карточек табелей (новые вверху, сервер уже отсортировал)
   listEl.innerHTML = timesheets.map(ts => {
     const incompleteClass = ts.complete ? '' : ' incomplete';
     const incompleteBadge = ts.complete ? '' : '<div class="incomplete-badge">не заполнен до конца</div>';
@@ -42,6 +41,7 @@ async function loadList() {
           <div>Создан: ${formatDate(ts.created)}</div>
           <div>Изменён: ${formatDate(ts.modified)}</div>
         </div>
+        <div class="total-badge">Итог: ${ts.totalScore != null ? ts.totalScore.toFixed(1) : '—'}</div>
         ${incompleteBadge}
       </div>
       <button class="btn-delete" data-filename="${ts.filename}">Удалить</button>
@@ -49,7 +49,6 @@ async function loadList() {
   `;
   }).join('');
 
-  // Обработчик клика по карточке — переход к редактированию
   listEl.querySelectorAll('.timesheet-item').forEach(item => {
     item.addEventListener('click', (e) => {
       if (e.target.classList.contains('btn-delete')) return;
@@ -58,7 +57,6 @@ async function loadList() {
     });
   });
 
-  // Обработчик кнопки удаления табеля
   listEl.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -76,12 +74,12 @@ btnNew.addEventListener('click', () => {
   window.location.href = '/create.html';
 });
 
-// Кнопка "Выгрузить табели" — сводный отчёт
+// Кнопка "Отчет"
 btnReport.addEventListener('click', () => {
   window.open('/api/report', '_blank');
 });
 
-// Кнопка "Выгрузить лог" — лог операций
+// Кнопка "Журнал"
 btnLog.addEventListener('click', () => {
   window.open('/api/log', '_blank');
 });
@@ -108,6 +106,11 @@ btnScrollTop.addEventListener('click', () => {
 btnScrollBottom.addEventListener('click', () => {
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 });
+
+// Регистрация Service Worker для PWA
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
 
 // Первоначальная загрузка списка
 loadList();
