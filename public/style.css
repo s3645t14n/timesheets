@@ -197,6 +197,8 @@ body {
   align-items: center;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   cursor: pointer;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .timesheet-item:active {
@@ -222,16 +224,19 @@ body {
 .status-past-complete {
   border-left: 4px solid #6c757d;
   background: #e9ecef;
+  cursor: default;
 }
 
 .status-past-incomplete {
   border-left: 4px solid #adb5bd;
   background: #e9ecef;
+  cursor: default;
 }
 
 .status-past-missing {
   border-left: 4px solid #ced4da;
   background: #f1f3f5;
+  cursor: default;
 }
 
 .status-past-complete .detail,
@@ -256,12 +261,17 @@ body {
 
 .timesheet-info {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .timesheet-info .detail {
   font-size: 13px;
   color: #666;
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .timesheet-info .dates {
@@ -269,6 +279,9 @@ body {
   color: #999;
   margin-top: 4px;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .total-badge {
