@@ -208,7 +208,7 @@ function generateReport() {
 </head>
 <body>
 <h1>Сводный отчёт по табелям</h1>
-<p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz}) | <a href="/api/config" target="_blank">показать активный конфиг</a></p>`;
+<p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>`;
 
   for (const time of config.times) {
     const items = grouped[time];
@@ -279,7 +279,7 @@ function generateLog() {
 </head>
 <body>
 <h1>Лог операций</h1>
-<p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>
+<p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz}) | <a href="/api/config" target="_blank">Показать активный конфиг</a></p>
 <table>
 <thead><tr><th>Дата и время</th><th>Операция</th><th>Подробности</th></tr></thead>
 <tbody>`;
