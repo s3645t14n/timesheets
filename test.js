@@ -3,7 +3,6 @@
 
 const BASE_URL = 'http://localhost:3000';
 
-// Случайные данные
 const inspectors = [
   'Иванов Иван Иванович',
   'Петров Пётр Петрович',
@@ -15,13 +14,11 @@ const inspectors = [
   'Васильев Алексей Михайлович'
 ];
 
-// Загружаем конфиг с сервера, чтобы узнать времена и критерии
 async function getConfig() {
   const res = await fetch(`${BASE_URL}/api/config`);
   return await res.json();
 }
 
-// Проверка дубликата (как живой пользователь)
 async function checkDuplicate(time, workplace) {
   const res = await fetch(`${BASE_URL}/api/timesheets/check-duplicate`, {
     method: 'POST',
@@ -31,7 +28,6 @@ async function checkDuplicate(time, workplace) {
   return await res.json();
 }
 
-// Создание табеля
 async function createTimesheet(time, inspector, workplace, overwrite = null) {
   const body = { time, inspector, workplace };
   if (overwrite) {
@@ -45,26 +41,22 @@ async function createTimesheet(time, inspector, workplace, overwrite = null) {
   return await res.json();
 }
 
-// Сохранение оценок
-async function saveScores(filename, scores) {
+async function saveScores(filename, scores, totalScore) {
   await fetch(`${BASE_URL}/api/timesheets/${filename}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scores })
+    body: JSON.stringify({ scores, totalScore })
   });
 }
 
-// Случайный выбор из массива
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Случайный балл 0, 1 или 2
 function randomScore() {
   return Math.floor(Math.random() * 3);
 }
 
-// Основной цикл
 async function main() {
   const config = await getConfig();
 
@@ -81,35 +73,33 @@ async function main() {
     const workplace = String(Math.floor(Math.random() * 20) + 1);
 
     try {
-      // Проверяем дубликат (как живой пользователь в create.js)
       const check = await checkDuplicate(time, workplace);
-
       let ts;
 
       if (check.duplicate) {
         if (check.existingComplete) {
-          // Табель уже заполнен — перезаписываем (как пользователь нажал "ОК")
           console.log(`[${new Date().toLocaleTimeString()}] Найден заполненный дубликат: ${time}, место ${workplace} (${check.existingInspector}). Перезаписываю...`);
           ts = await createTimesheet(time, inspector, workplace, check.existingFile);
         } else {
-          // Табель не заполнен — пропускаем (как пользователь получил alert и отменил)
           console.log(`[${new Date().toLocaleTimeString()}] Пропущен (заполняется): ${time}, место ${workplace} (начал ${check.existingInspector})`);
           return;
         }
       } else {
-        // Новый табель
         ts = await createTimesheet(time, inspector, workplace);
         console.log(`[${new Date().toLocaleTimeString()}] Создан: ${time}, место ${workplace} (${inspector})`);
       }
 
-      // Заполняем случайными баллами
+      // Генерируем случайные оценки и считаем итог
       const scores = {};
+      let totalScore = 0;
       for (const crit of config.criteria) {
-        scores[crit.id] = randomScore();
+        const value = randomScore();
+        scores[crit.id] = value;
+        totalScore += crit.maxScore * (value / 2);
       }
 
-      await saveScores(ts.filename, scores);
-      console.log(`[${new Date().toLocaleTimeString()}] Заполнен: ${ts.filename}`);
+      await saveScores(ts.filename, scores, totalScore);
+      console.log(`[${new Date().toLocaleTimeString()}] Заполнен: ${ts.filename}, итог: ${totalScore.toFixed(1)}`);
       count++;
       console.log(`  Всего создано: ${count}\n`);
     } catch (err) {
@@ -117,10 +107,7 @@ async function main() {
     }
   };
 
-  // Первый табель сразу
   await createAndFill();
-
-  // Остальные по таймеру
   setInterval(createAndFill, 2000);
 }
 
