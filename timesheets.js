@@ -76,7 +76,6 @@ function findDuplicate(time, workplace) {
   return getActiveTimesheets().find(ts => ts.time === time && ts.workplace === workplace) || null;
 }
 
-// Получение всех табелей, включая помеченные удалёнными
 function getAllTimesheets() {
   const config = loadConfig();
   const files = fs.readdirSync(DATA_DIR);
@@ -103,4 +102,4 @@ function getAllTimesheets() {
   return result;
 }
 
-module.exports = { escapeHtml, makeSlug, getCurrentCheckTime, makeFilename, getTimesheetPath, isComplete, getActiveTimesheets, findDuplicate, DATA_DIR };
+module.exports = { escapeHtml, makeSlug, getCurrentCheckTime, makeFilename, getTimesheetPath, isComplete, getActiveTimesheets, findDuplicate, getAllTimesheets, DATA_DIR };
