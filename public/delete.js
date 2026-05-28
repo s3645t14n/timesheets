@@ -1,5 +1,6 @@
 const listEl = document.getElementById('all-timesheets-list');
 const btnBack = document.getElementById('btn-back');
+const btnDeleteAll = document.getElementById('btn-delete-all');
 
 function escapeHtml(str) {
   if (str == null) return '';
@@ -41,11 +42,15 @@ async function loadAll() {
           </div>
           ${deletedBadge}
         </div>
-        ${!ts.deleted ? `<button class="btn-delete" data-filename="${escapeHtml(ts.filename)}">Удалить</button>` : ''}
+        ${ts.deleted
+          ? `<button class="btn-restore" data-filename="${escapeHtml(ts.filename)}">Восстановить</button>`
+          : `<button class="btn-delete" data-filename="${escapeHtml(ts.filename)}">Удалить</button>`
+        }
       </div>
     `;
     }).join('');
 
+    // Удаление
     listEl.querySelectorAll('.btn-delete').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -55,8 +60,27 @@ async function loadAll() {
             await fetch(`/api/timesheets/${encodeURIComponent(fn)}`, { method: 'DELETE' });
             loadAll();
           } catch (err) {
-            alert('Ошибка удаления. Проверьте подключение к сети.');
+            alert('Ошибка удаления.');
           }
+        }
+      });
+    });
+
+    // Восстановление
+    listEl.querySelectorAll('.btn-restore').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const fn = btn.dataset.filename;
+        try {
+          const res = await fetch(`/api/timesheets/${encodeURIComponent(fn)}/restore`, { method: 'POST' });
+          if (!res.ok) {
+            const err = await res.json();
+            alert(err.error || 'Ошибка восстановления');
+            return;
+          }
+          loadAll();
+        } catch (err) {
+          alert('Ошибка восстановления.');
         }
       });
     });
@@ -64,6 +88,21 @@ async function loadAll() {
     listEl.innerHTML = '<div class="empty">Ошибка загрузки.</div>';
   }
 }
+
+// Удалить все
+btnDeleteAll.addEventListener('click', async () => {
+  if (!confirm('Удалить ВСЕ активные табели? Удалённые останутся без изменений.')) return;
+  try {
+    const res = await fetch('/api/timesheets');
+    const timesheets = await res.json();
+    for (const ts of timesheets) {
+      await fetch(`/api/timesheets/${encodeURIComponent(ts.filename)}`, { method: 'DELETE' });
+    }
+    loadAll();
+  } catch (err) {
+    alert('Ошибка при массовом удалении.');
+  }
+});
 
 btnBack.addEventListener('click', () => {
   window.location.href = '/';

@@ -505,3 +505,31 @@ button:disabled {
   margin-bottom: 16px;
   text-align: center;
 }
+
+/* Кнопка восстановления */
+.btn-restore {
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.btn-restore:active {
+  background: #1e8449;
+}
+
+/* Опасная кнопка */
+.btn-danger {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+}
+
+.btn-danger:active {
+  background: #c0392b;
+}

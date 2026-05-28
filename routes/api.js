@@ -238,6 +238,22 @@ async function apiRouter(req, res) {
     }
   }
 
+  // --- восстановление удалённого табеля ---
+  if (url.startsWith('/api/timesheets/') && url.endsWith('/restore') && method === 'POST') {
+    const filename = url.replace('/api/timesheets/', '').replace('/restore', '').split('?')[0];
+    const deletedPath = path.join(DATA_DIR, filename);
+    const restoredName = filename.replace('_d.json', '.json');
+    const restoredPath = path.join(DATA_DIR, restoredName);
+    try {
+      if (!fs.existsSync(deletedPath)) return sendJSON(res, { error: 'Not found' }, 404);
+      fs.renameSync(deletedPath, restoredPath);
+      logAction(`Восстановление табеля`, `Файл: /api/timesheets/${restoredName}`);
+      return sendJSON(res, { ok: true });
+    } catch (err) {
+      return sendJSON(res, { error: 'Не удалось восстановить табель' }, 500);
+    }
+  }
+
   // --- конфиг ---
   if (url === '/api/config' && method === 'GET') {
     return sendJSON(res, loadConfig());
