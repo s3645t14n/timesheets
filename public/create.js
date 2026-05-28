@@ -2,6 +2,8 @@
 const selectTime = document.getElementById('time');
 const inputInspector = document.getElementById('inspector');
 const inputWorkplace = document.getElementById('workplace');
+const errorInspector = document.getElementById('error-inspector');
+const errorWorkplace = document.getElementById('error-workplace');
 const btnCancel = document.getElementById('btn-cancel');
 const form = document.getElementById('create-form');
 
@@ -12,6 +14,42 @@ async function loadTimes() {
   selectTime.innerHTML = config.times.map(t => `<option value="${t}">${t}</option>`).join('');
 }
 
+// Валидация ФИО — только буквы, точки и пробелы
+function validateInspector() {
+  const value = inputInspector.value.trim();
+  const nameRegex = /^[a-zA-Zа-яА-ЯёЁ .]+$/;
+  if (value === '') {
+    errorInspector.textContent = '';
+    return true;
+  }
+  if (!nameRegex.test(value)) {
+    errorInspector.textContent = 'Только буквы, точки и пробелы';
+    return false;
+  }
+  errorInspector.textContent = '';
+  return true;
+}
+
+// Валидация рабочего места — только цифры
+function validateWorkplace() {
+  const value = inputWorkplace.value.trim();
+  const workplaceRegex = /^\d+$/;
+  if (value === '') {
+    errorWorkplace.textContent = '';
+    return true;
+  }
+  if (!workplaceRegex.test(value)) {
+    errorWorkplace.textContent = 'Только цифры';
+    return false;
+  }
+  errorWorkplace.textContent = '';
+  return true;
+}
+
+// Live-валидация при вводе
+inputInspector.addEventListener('input', validateInspector);
+inputWorkplace.addEventListener('input', validateWorkplace);
+
 // Кнопка отмены — возврат на главный экран
 btnCancel.addEventListener('click', () => {
   window.location.href = '/';
@@ -21,24 +59,14 @@ btnCancel.addEventListener('click', () => {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  // Финальная проверка перед отправкой
+  const inspectorValid = validateInspector();
+  const workplaceValid = validateWorkplace();
+
+  if (!inspectorValid || !workplaceValid) return;
+
   const inspector = inputInspector.value.trim();
   const workplace = inputWorkplace.value.trim();
-
-  // Валидация ФИО — только буквы (русские и латинские), точки, пробелы
-  const nameRegex = /^[a-zA-Zа-яА-ЯёЁ .]+$/;
-  if (!nameRegex.test(inspector)) {
-    alert('ФИО может содержать только буквы, точки и пробелы.');
-    inputInspector.focus();
-    return;
-  }
-
-  // Валидация номера рабочего места — только цифры
-  const workplaceRegex = /^\d+$/;
-  if (!workplaceRegex.test(workplace)) {
-    alert('Номер рабочего места может содержать только цифры.');
-    inputWorkplace.focus();
-    return;
-  }
 
   const data = {
     time: selectTime.value,

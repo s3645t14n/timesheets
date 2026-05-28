@@ -440,3 +440,11 @@ button:disabled {
 .app-footer a:hover {
   text-decoration: underline;
 }
+
+/* Сообщение об ошибке валидации */
+.field-error {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 4px;
+  min-height: 16px;
+}
