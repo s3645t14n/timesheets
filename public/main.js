@@ -56,14 +56,12 @@ async function loadList() {
         <div class="total-badge">Итог: ${ts.totalScore != null ? ts.totalScore.toFixed(1) : '—'}${percentStr}</div>
         ${incompleteBadge}
       </div>
-      <button class="btn-delete" data-filename="${escapeHtml(ts.filename)}">Удалить</button>
     </div>
   `;
     }).join('');
 
     listEl.querySelectorAll('.timesheet-item').forEach(item => {
       item.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-delete')) return;
         const fn = item.dataset.filename;
         window.location.href = `/edit.html?file=${encodeURIComponent(fn)}`;
       });
