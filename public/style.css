@@ -1,4 +1,3 @@
-/* Общие сбросы и базовый стиль */
 * {
   margin: 0;
   padding: 0;
@@ -14,15 +13,12 @@ body {
   min-height: 100vh;
 }
 
-/* Заголовок приложения — фиксированный */
 .app-header {
   background: #2c3e50;
   color: #fff;
   text-align: center;
-  padding: 10px 16px;
-  font-size: 16px;
-  font-weight: bold;
-  letter-spacing: 1px;
+  padding: 6px 12px;
+  font-size: 14px;
   position: fixed;
   top: 0;
   left: 0;
@@ -42,42 +38,36 @@ body {
   color: #fff;
 }
 
-/* Серверное время */
 .server-time {
   position: absolute;
-  left: 16px;
+  left: 12px;
   color: rgba(255,255,255,0.7);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: normal;
   letter-spacing: 0;
 }
 
-/* Кнопка обновления */
-.btn-refresh {
+.btn-home {
   position: absolute;
   right: 16px;
-  background: none;
-  border: none;
   color: #fff;
+  text-decoration: none;
   font-size: 20px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
 }
 
-.btn-refresh:hover {
-  background: rgba(255, 255, 255, 0.15);
+.btn-home:hover {
+  background: rgba(255,255,255,0.15);
 }
 
-.btn-refresh:active {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Кнопка руководства */
 .btn-guide {
   position: absolute;
-  right: 56px;
+  right: 92px;
   color: #fff;
   text-decoration: none;
   font-size: 16px;
@@ -93,10 +83,9 @@ body {
 }
 
 .btn-guide:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255,255,255,0.15);
 }
 
-/* Иконки в header */
 .btn-header-icon {
   position: absolute;
   color: #fff;
@@ -111,27 +100,18 @@ body {
 }
 
 .btn-header-icon:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255,255,255,0.15);
 }
 
-.btn-header-icon[title="Конфиг"] {
-  right: 164px;
-}
+.btn-header-icon[title="Конфиг"] { right: 200px; }
+.btn-header-icon[title="Отчет"] { right: 164px; }
+.btn-header-icon[title="Журнал"] { right: 128px; }
 
-.btn-header-icon[title="Отчет"] {
-  right: 128px;
-}
-
-.btn-header-icon[title="Журнал"] {
-  right: 92px;
-}
-
-/* Основной контейнер */
 .container {
   max-width: 480px;
   margin: 0 auto;
-  padding: 16px;
-  padding-top: 56px;
+  padding: 8px;
+  padding-top: 48px;
   padding-bottom: 80px;
 }
 
@@ -139,39 +119,27 @@ body {
   max-width: 480px;
 }
 
-/* --- Адаптивная сетка табелей --- */
 .timesheets-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
 }
 
 @media (min-width: 600px) {
-  .timesheets-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .container {
-    max-width: 620px;
-  }
+  .timesheets-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .container { max-width: 620px; }
 }
 
 @media (min-width: 960px) {
-  .timesheets-grid {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-
-  .container {
-    max-width: 960px;
-  }
+  .timesheets-grid { grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; }
+  .container { max-width: 960px; }
 }
 
-/* Заголовок группы */
 .group-heading {
-  font-size: 16px;
+  font-size: 14px;
   color: #2c3e50;
-  margin: 16px 0 8px;
-  padding-bottom: 4px;
+  margin: 12px 0 6px;
+  padding-bottom: 3px;
   border-bottom: 2px solid #2c3e50;
   grid-column: 1 / -1;
 }
@@ -182,80 +150,50 @@ body {
 }
 
 .closed-badge {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: normal;
   color: #999;
 }
 
-/* --- Карточка табеля --- */
 .timesheet-item {
   background: #fff;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 6px;
+  padding: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
   cursor: pointer;
   max-width: 100%;
   min-width: 0;
+  font-size: 13px;
+  gap: 4px;
 }
 
 .timesheet-item:active {
   background: #eee;
 }
 
-/* Статусы табелей */
-.status-complete {
-  border-left: 4px solid #4caf50;
-  background: #e8f5e9;
-}
-
-.status-incomplete {
-  border-left: 4px solid #ffc107;
-  background: #fffde7;
-}
-
-.status-missing {
-  border-left: 4px solid #e74c3c;
-  background: #fff5f5;
-}
-
-.status-past-complete {
-  border-left: 4px solid #6c757d;
-  background: #e9ecef;
-  cursor: default;
-}
-
-.status-past-incomplete {
-  border-left: 4px solid #adb5bd;
-  background: #e9ecef;
-  cursor: default;
-}
-
-.status-past-missing {
-  border-left: 4px solid #ced4da;
-  background: #f1f3f5;
-  cursor: default;
-}
+.status-complete { border-left: 3px solid #4caf50; background: #e8f5e9; }
+.status-incomplete { border-left: 3px solid #ffc107; background: #fffde7; }
+.status-missing { border-left: 3px solid #e74c3c; background: #fff5f5; }
+.status-past-complete { border-left: 3px solid #6c757d; background: #e9ecef; cursor: default; }
+.status-past-incomplete { border-left: 3px solid #adb5bd; background: #e9ecef; cursor: default; }
+.status-past-missing { border-left: 3px solid #ced4da; background: #f1f3f5; cursor: default; }
 
 .status-past-complete .detail,
 .status-past-incomplete .detail,
-.status-past-missing .detail {
-  color: #555;
-}
+.status-past-missing .detail { color: #555; }
 
 .status-past-complete .dates,
 .status-past-incomplete .dates,
-.status-past-missing .dates {
-  color: #777;
-}
+.status-past-missing .dates { color: #777; }
 
 .status-badge {
-  font-size: 20px;
-  margin-left: 8px;
+  font-size: 16px;
+  margin-left: 4px;
   flex-shrink: 0;
-  width: 32px;
+  width: 24px;
   text-align: center;
 }
 
@@ -266,128 +204,68 @@ body {
 }
 
 .timesheet-info .detail {
-  font-size: 13px;
+  font-size: 12px;
   color: #666;
-  margin-top: 2px;
+  margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .timesheet-info .dates {
-  font-size: 11px;
+  font-size: 10px;
   color: #999;
-  margin-top: 4px;
-  line-height: 1.3;
+  margin-top: 2px;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .total-badge {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: bold;
   color: #2c3e50;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
-/* Кнопки в карточках */
-.btn-create-ts {
-  background: #e74c3c;
-  color: #fff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-.btn-create-ts:active {
-  background: #c0392b;
-}
-
-.btn-continue {
-  background: #ffc107;
-  color: #333;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-.btn-continue:active {
-  background: #e0a800;
-}
-
-.btn-edit {
-  background: #4caf50;
-  color: #fff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-.btn-edit:active {
-  background: #388e3c;
-}
-
-/* Кнопка удаления (delete.html) */
-.btn-delete {
-  background: #e74c3c;
-  color: #fff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-.btn-delete:active {
-  background: #c0392b;
-}
-
-/* Кнопка восстановления (delete.html) */
+.btn-create-ts,
+.btn-continue,
+.btn-edit,
+.btn-delete,
 .btn-restore {
-  background: #27ae60;
-  color: #fff;
   border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
   cursor: pointer;
-  margin-left: 8px;
+  margin-left: 4px;
   flex-shrink: 0;
 }
 
-.btn-restore:active {
-  background: #1e8449;
-}
+.btn-create-ts { background: #e74c3c; color: #fff; }
+.btn-create-ts:active { background: #c0392b; }
+.btn-continue { background: #ffc107; color: #333; }
+.btn-continue:active { background: #e0a800; }
+.btn-edit { background: #4caf50; color: #fff; }
+.btn-edit:active { background: #388e3c; }
+.btn-delete { background: #e74c3c; color: #fff; }
+.btn-delete:active { background: #c0392b; }
+.btn-restore { background: #27ae60; color: #fff; }
+.btn-restore:active { background: #1e8449; }
 
-/* Удалённый табель */
 .timesheet-item.deleted {
   opacity: 0.5;
-  border-left: 4px solid #999;
+  border-left: 3px solid #999;
 }
 
 .deleted-badge {
   color: #999;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
-/* --- Формы --- */
 label {
   display: block;
   font-size: 14px;
@@ -410,9 +288,7 @@ select:focus, input:focus {
   border-color: #3498db;
 }
 
-.form-fields {
-  margin-bottom: 20px;
-}
+.form-fields { margin-bottom: 20px; }
 
 .field-error {
   color: #e74c3c;
@@ -421,24 +297,21 @@ select:focus, input:focus {
   min-height: 16px;
 }
 
-/* --- Кнопки действий --- */
 .buttons {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.container > .buttons {
-  margin-bottom: 20px;
-}
+.container > .buttons { margin-bottom: 12px; }
 
 .buttons button {
   flex: 1;
   min-width: 100px;
-  padding: 14px 10px;
+  padding: 10px 8px;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -448,35 +321,16 @@ select:focus, input:focus {
   color: #fff;
 }
 
-#btn-new:active, #btn-create:active, #btn-save:active {
-  background: #27ae60;
-}
+#btn-new:active, #btn-create:active, #btn-save:active { background: #27ae60; }
 
-#btn-cancel {
-  background: #95a5a6;
-  color: #fff;
-}
+#btn-cancel { background: #95a5a6; color: #fff; }
+#btn-cancel:active { background: #7f8c8d; }
 
-#btn-cancel:active {
-  background: #7f8c8d;
-}
+.btn-danger { background: #e74c3c; color: #fff; border: none; }
+.btn-danger:active { background: #c0392b; }
 
-.btn-danger {
-  background: #e74c3c;
-  color: #fff;
-  border: none;
-}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.btn-danger:active {
-  background: #c0392b;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* --- Метаданные табеля --- */
 #meta {
   background: #fff;
   border-radius: 8px;
@@ -486,15 +340,9 @@ button:disabled {
   font-size: 14px;
 }
 
-#meta .meta-row {
-  margin-bottom: 4px;
-}
+#meta .meta-row { margin-bottom: 4px; }
+#meta .meta-label { color: #888; }
 
-#meta .meta-label {
-  color: #888;
-}
-
-/* --- Критерии --- */
 .criterion {
   background: #fff;
   border-radius: 8px;
@@ -508,11 +356,7 @@ button:disabled {
   border-left: 4px solid #4caf50;
 }
 
-.criterion-name {
-  font-weight: bold;
-  font-size: 15px;
-  margin-bottom: 2px;
-}
+.criterion-name { font-weight: bold; font-size: 15px; margin-bottom: 2px; }
 
 .criterion-desc {
   font-size: 12px;
@@ -521,21 +365,10 @@ button:disabled {
   line-height: 1.3;
 }
 
-.max-score {
-  font-size: 12px;
-  color: #999;
-  font-weight: normal;
-}
+.max-score { font-size: 12px; color: #999; font-weight: normal; }
 
-/* Группа радиокнопок */
-.radio-group {
-  display: flex;
-  gap: 12px;
-}
-
-.radio-option {
-  flex: 1;
-}
+.radio-group { display: flex; gap: 12px; }
+.radio-option { flex: 1; }
 
 .radio-option label {
   display: flex;
@@ -549,9 +382,7 @@ button:disabled {
   text-align: center;
 }
 
-.radio-option label:has(input:checked) {
-  background: #e8f5e9;
-}
+.radio-option label:has(input:checked) { background: #e8f5e9; }
 
 .radio-option input[type="radio"] {
   width: 20px;
@@ -567,7 +398,6 @@ button:disabled {
   line-height: 1.3;
 }
 
-/* --- Пустой список --- */
 .empty {
   text-align: center;
   color: #999;
@@ -576,7 +406,6 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
-/* --- Плавающие кнопки скролла --- */
 .scroll-buttons {
   position: fixed;
   bottom: 20px;
@@ -602,28 +431,24 @@ button:disabled {
   justify-content: center;
 }
 
-.scroll-buttons button:active {
-  background: #1a252f;
-}
+.scroll-buttons button:active { background: #1a252f; }
 
-/* --- Плавающее окошко итогового балла --- */
 .total-score-widget {
   position: fixed;
-  top: 52px;
-  right: 16px;
+  top: 44px;
+  right: 12px;
   background: #2c3e50;
   color: #fff;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 13px;
   font-weight: bold;
   z-index: 150;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-/* --- Уведомления о предстоящих сменах --- */
 #upcoming-notices {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -640,19 +465,10 @@ button:disabled {
   font-size: 11px;
 }
 
-.notice-icon {
-  font-size: 12px;
-}
+.notice-icon { font-size: 12px; }
+.notice-text { color: #333; }
+.notice-time { color: #999; }
 
-.notice-text {
-  color: #333;
-}
-
-.notice-time {
-  color: #999;
-}
-
-/* --- Описание страницы --- */
 .page-desc {
   font-size: 13px;
   color: #888;
@@ -660,7 +476,6 @@ button:disabled {
   text-align: center;
 }
 
-/* --- Футер --- */
 .app-footer {
   text-align: center;
   padding: 16px;
@@ -668,15 +483,6 @@ button:disabled {
   color: #999;
 }
 
-.app-footer a {
-  color: #999;
-  text-decoration: none;
-}
-
-.app-footer a:visited {
-  color: #999;
-}
-
-.app-footer a:hover {
-  text-decoration: underline;
-}
+.app-footer a { color: #999; text-decoration: none; }
+.app-footer a:visited { color: #999; }
+.app-footer a:hover { text-decoration: underline; }
