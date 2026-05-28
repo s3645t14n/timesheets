@@ -352,7 +352,8 @@ const server = http.createServer(async (req, res) => {
         time: body.time,
         inspector: body.inspector,
         workplace: body.workplace,
-        scores: {}
+        scores: {},
+        totalScore: 0
       };
 
       fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2));

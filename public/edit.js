@@ -23,6 +23,32 @@ async function loadData() {
   render();
 }
 
+// Сохранение оценок и итога на сервер (автоматическое, после каждого изменения)
+async function autoSave() {
+  const scores = {};
+  let totalScore = 0;
+
+  configData.criteria.forEach(crit => {
+    const checked = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]:checked`);
+    if (checked) {
+      const value = parseInt(checked.value);
+      scores[crit.id] = value;
+      totalScore += crit.maxScore * (value / 2);
+    }
+  });
+
+  // Обновляем локальные данные
+  timesheetData.scores = scores;
+  timesheetData.totalScore = totalScore;
+
+  // Отправляем на сервер
+  await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scores, totalScore })
+  });
+}
+
 // Отображение метаданных табеля (время, ФИО, рабочее место)
 function renderMeta() {
   metaEl.innerHTML = `
@@ -60,12 +86,16 @@ function renderCriteria() {
     `;
   }).join('');
 
+  // Обработчик изменения любой радиокнопки — автосохранение
   criteriaListEl.querySelectorAll('input[type="radio"]').forEach(radio => {
-    radio.addEventListener('change', checkAllScored);
+    radio.addEventListener('change', async () => {
+      checkAllScored();
+      await autoSave();
+    });
   });
 }
 
-// Проверка, все ли критерии оценены, подсветка и расчёт итогового балла
+// Проверка, все ли критерии оценены, подсветка и обновление итога в плавающем окошке
 function checkAllScored() {
   let allScored = true;
   let totalScore = 0;
@@ -96,29 +126,26 @@ function checkAllScored() {
   }
 }
 
-// Сохранение оценок на сервер
+// Кнопка сохранения — финальное сохранение и возврат на главную
 btnSave.addEventListener('click', async () => {
+  // Финальное полное сохранение (перестраховка)
   const scores = {};
   let totalScore = 0;
 
   configData.criteria.forEach(crit => {
     const checked = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]:checked`);
-    const value = parseInt(checked.value);
-    scores[crit.id] = value;
-    totalScore += crit.maxScore * (value / 2);
+    if (checked) {
+      const value = parseInt(checked.value);
+      scores[crit.id] = value;
+      totalScore += crit.maxScore * (value / 2);
+    }
   });
 
-  const res = await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
+  await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ scores, totalScore })
   });
-
-  if (!res.ok) {
-    alert('Этот табель был удалён другим пользователем. Сохранение невозможно.');
-    window.location.href = '/';
-    return;
-  }
 
   window.location.href = '/';
 });
