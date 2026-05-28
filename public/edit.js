@@ -1,3 +1,14 @@
+// Экранирование HTML
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Элементы страницы
 const metaEl = document.getElementById('meta');
 const criteriaListEl = document.getElementById('criteria-list');
@@ -14,17 +25,21 @@ let configData = null;
 
 // Загрузка табеля и конфига с сервера
 async function loadData() {
-  const [tsRes, cfgRes] = await Promise.all([
-    fetch(`/api/timesheets/${encodeURIComponent(filename)}`),
-    fetch('/api/config')
-  ]);
-  timesheetData = await tsRes.json();
-  configData = await cfgRes.json();
-  render();
+  try {
+    const [tsRes, cfgRes] = await Promise.all([
+      fetch(`/api/timesheets/${encodeURIComponent(filename)}`),
+      fetch('/api/config')
+    ]);
+    timesheetData = await tsRes.json();
+    configData = await cfgRes.json();
+    render();
+  } catch (err) {
+    alert('Не удалось загрузить данные. Проверьте подключение к сети.');
+  }
 }
 
-// Сохранение оценок и итога на сервер (автоматическое, после каждого изменения)
-async function autoSave() {
+// Единая функция расчёта оценок, итога и процента
+function calculateScores() {
   const scores = {};
   let totalScore = 0;
 
@@ -37,28 +52,41 @@ async function autoSave() {
     }
   });
 
-  // Обновляем локальные данные
-  timesheetData.scores = scores;
-  timesheetData.totalScore = totalScore;
+  const maxTotal = configData.maxTotalScore || 75;
+  const percent = maxTotal > 0 ? parseFloat(((totalScore / maxTotal) * 100).toFixed(1)) : 0;
 
-  // Отправляем на сервер
-  await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scores, totalScore })
-  });
+  return { scores, totalScore, percent };
 }
 
-// Отображение метаданных табеля (время, ФИО, рабочее место)
+// Сохранение оценок, итога и процента на сервер
+async function autoSave() {
+  const { scores, totalScore, percent } = calculateScores();
+
+  timesheetData.scores = scores;
+  timesheetData.totalScore = totalScore;
+  timesheetData.percent = percent;
+
+  try {
+    await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scores, totalScore, percent })
+    });
+  } catch (err) {
+    // Молча игнорируем ошибку автосохранения
+  }
+}
+
+// Отображение метаданных табеля
 function renderMeta() {
   metaEl.innerHTML = `
-    <div class="meta-row"><span class="meta-label">Время:</span> ${timesheetData.time}</div>
-    <div class="meta-row"><span class="meta-label">Проверяющий:</span> ${timesheetData.inspector}</div>
-    <div class="meta-row"><span class="meta-label">Рабочее место:</span> ${timesheetData.workplace}</div>
+    <div class="meta-row"><span class="meta-label">Время:</span> ${escapeHtml(timesheetData.time)}</div>
+    <div class="meta-row"><span class="meta-label">Проверяющий:</span> ${escapeHtml(timesheetData.inspector)}</div>
+    <div class="meta-row"><span class="meta-label">Рабочее место:</span> ${escapeHtml(timesheetData.workplace)}</div>
   `;
 }
 
-// Отображение списка критериев с радиокнопками (0, 1, 2)
+// Отображение списка критериев с радиокнопками
 function renderCriteria() {
   criteriaListEl.innerHTML = configData.criteria.map(crit => {
     const savedValue = timesheetData.scores[crit.id];
@@ -66,27 +94,32 @@ function renderCriteria() {
 
     return `
       <div class="criterion">
-        <div class="criterion-name">Критерий ${crit.id} <span class="max-score">(макс. ${crit.maxScore} балла)</span></div>
-        <div class="criterion-desc">${crit.description}</div>
+        <div class="criterion-name">Критерий ${escapeHtml(crit.id)} <span class="max-score">(макс. ${crit.maxScore} балла)</span></div>
+        <div class="criterion-desc">${escapeHtml(crit.description)}</div>
         <div class="radio-group">
           <div class="radio-option">
-            <label><input type="radio" name="crit_${crit.id}" value="0" ${savedValue === 0 ? 'checked' : ''}> 0</label>
-            <div class="option-desc">${options[0]}</div>
+            <label>
+              <input type="radio" name="crit_${escapeHtml(crit.id)}" value="0" ${savedValue === 0 ? 'checked' : ''}> 0
+              <div class="option-desc">${escapeHtml(options[0])}</div>
+            </label>
           </div>
           <div class="radio-option">
-            <label><input type="radio" name="crit_${crit.id}" value="1" ${savedValue === 1 ? 'checked' : ''}> 1</label>
-            <div class="option-desc">${options[1]}</div>
+            <label>
+              <input type="radio" name="crit_${escapeHtml(crit.id)}" value="1" ${savedValue === 1 ? 'checked' : ''}> 1
+              <div class="option-desc">${escapeHtml(options[1])}</div>
+            </label>
           </div>
           <div class="radio-option">
-            <label><input type="radio" name="crit_${crit.id}" value="2" ${savedValue === 2 ? 'checked' : ''}> 2</label>
-            <div class="option-desc">${options[2]}</div>
+            <label>
+              <input type="radio" name="crit_${escapeHtml(crit.id)}" value="2" ${savedValue === 2 ? 'checked' : ''}> 2
+              <div class="option-desc">${escapeHtml(options[2])}</div>
+            </label>
           </div>
         </div>
       </div>
     `;
   }).join('');
 
-  // Обработчик изменения любой радиокнопки — автосохранение
   criteriaListEl.querySelectorAll('input[type="radio"]').forEach(radio => {
     radio.addEventListener('change', async () => {
       checkAllScored();
@@ -95,11 +128,11 @@ function renderCriteria() {
   });
 }
 
-// Проверка, все ли критерии оценены, подсветка и обновление итога в плавающем окошке
+// Проверка, все ли критерии оценены, подсветка и обновление итога
 function checkAllScored() {
-  let allScored = true;
-  let totalScore = 0;
+  const { totalScore, percent } = calculateScores();
 
+  let allScored = true;
   configData.criteria.forEach(crit => {
     const radio = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]:checked`);
     const criterionEl = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]`)?.closest('.criterion');
@@ -107,8 +140,6 @@ function checkAllScored() {
     if (criterionEl) {
       if (radio) {
         criterionEl.classList.add('scored');
-        const multiplier = parseInt(radio.value) / 2;
-        totalScore += crit.maxScore * multiplier;
       } else {
         criterionEl.classList.remove('scored');
         allScored = false;
@@ -122,30 +153,27 @@ function checkAllScored() {
 
   const totalEl = document.getElementById('total-score');
   if (totalEl) {
-    totalEl.textContent = `Итог: ${totalScore.toFixed(1)}`;
+    totalEl.textContent = `Итог: ${totalScore.toFixed(1)} (${percent}%)`;
   }
 }
 
 // Кнопка сохранения — финальное сохранение и возврат на главную
 btnSave.addEventListener('click', async () => {
-  // Финальное полное сохранение (перестраховка)
-  const scores = {};
-  let totalScore = 0;
+  const { scores, totalScore, percent } = calculateScores();
 
-  configData.criteria.forEach(crit => {
-    const checked = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]:checked`);
-    if (checked) {
-      const value = parseInt(checked.value);
-      scores[crit.id] = value;
-      totalScore += crit.maxScore * (value / 2);
+  try {
+    const res = await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scores, totalScore, percent })
+    });
+
+    if (!res.ok) {
+      alert('Этот табель был удалён другим пользователем. Сохранение невозможно.');
     }
-  });
-
-  await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scores, totalScore })
-  });
+  } catch (err) {
+    alert('Ошибка сохранения. Проверьте подключение к сети.');
+  }
 
   window.location.href = '/';
 });

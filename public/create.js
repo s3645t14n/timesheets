@@ -1,20 +1,51 @@
 // Элементы формы
-const selectTime = document.getElementById('time');
 const inputInspector = document.getElementById('inspector');
 const inputWorkplace = document.getElementById('workplace');
 const errorInspector = document.getElementById('error-inspector');
-const errorWorkplace = document.getElementById('error-workplace');
 const btnCancel = document.getElementById('btn-cancel');
 const form = document.getElementById('create-form');
 
-// Загрузка вариантов времени проверки из конфига
-async function loadTimes() {
-  const res = await fetch('/api/config');
-  const config = await res.json();
-  selectTime.innerHTML = config.times.map(t => `<option value="${t}">${t}</option>`).join('');
+// Загрузка списка рабочих мест
+async function loadWorkplaces() {
+  try {
+    const res = await fetch('/api/config');
+    const config = await res.json();
+    await updateWorkplaces(config);
+  } catch (err) {
+    alert('Не удалось загрузить список рабочих мест. Проверьте подключение к сети.');
+  }
 }
 
-// Валидация ФИО — только буквы, точки и пробелы
+// Обновление списка рабочих мест с учётом занятых
+async function updateWorkplaces(config) {
+  try {
+    const res = await fetch('/api/timesheets');
+    const timesheets = await res.json();
+
+    const occupied = {};
+    for (const ts of timesheets) {
+      occupied[ts.workplace] = ts.inspector;
+    }
+
+    const maxWorkplaces = config.maxWorkplaces || 14;
+    inputWorkplace.innerHTML = '';
+    for (let i = 1; i <= maxWorkplaces; i++) {
+      const option = document.createElement('option');
+      option.value = i;
+      if (occupied[i]) {
+        option.textContent = `${i} (заблокировано — ${occupied[i]})`;
+        option.disabled = true;
+      } else {
+        option.textContent = i;
+      }
+      inputWorkplace.appendChild(option);
+    }
+  } catch (err) {
+    // Молча — список останется без обновления
+  }
+}
+
+// Валидация ФИО
 function validateInspector() {
   const value = inputInspector.value.trim();
   const nameRegex = /^[a-zA-Zа-яА-ЯёЁ .]+$/;
@@ -30,84 +61,41 @@ function validateInspector() {
   return true;
 }
 
-// Валидация рабочего места — только цифры
-function validateWorkplace() {
-  const value = inputWorkplace.value.trim();
-  const workplaceRegex = /^\d+$/;
-  if (value === '') {
-    errorWorkplace.textContent = '';
-    return true;
-  }
-  if (!workplaceRegex.test(value)) {
-    errorWorkplace.textContent = 'Только цифры';
-    return false;
-  }
-  errorWorkplace.textContent = '';
-  return true;
-}
-
-// Live-валидация при вводе
 inputInspector.addEventListener('input', validateInspector);
-inputWorkplace.addEventListener('input', validateWorkplace);
 
-// Кнопка отмены — возврат на главный экран
 btnCancel.addEventListener('click', () => {
   window.location.href = '/';
 });
 
-// Отправка формы создания табеля
+// Отправка формы
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  // Финальная проверка перед отправкой
   const inspectorValid = validateInspector();
-  const workplaceValid = validateWorkplace();
-
-  if (!inspectorValid || !workplaceValid) return;
+  if (!inspectorValid) return;
 
   const inspector = inputInspector.value.trim();
-  const workplace = inputWorkplace.value.trim();
+  const workplace = inputWorkplace.value;
 
-  const data = {
-    time: selectTime.value,
-    inspector: inspector,
-    workplace: workplace
-  };
+  try {
+    const res = await fetch('/api/timesheets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inspector, workplace })
+    });
 
-  // Проверка на дубликат (время + рабочее место)
-  const checkRes = await fetch('/api/timesheets/check-duplicate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ time: data.time, workplace: data.workplace })
-  });
-  const checkResult = await checkRes.json();
-
-  // Если дубликат найден — запрос на перезапись или отмену
-  if (checkResult.duplicate) {
-    if (checkResult.existingComplete) {
-      const choice = confirm(
-        `Табель для времени "${data.time}" и рабочего места "${data.workplace}" уже заполнен.\n\nЕго внёс: ${checkResult.existingInspector}\n\nНажмите "ОК", чтобы перезаписать, или "Отмена" для возврата.`
-      );
-      if (!choice) return;
-      data.overwrite = checkResult.existingFile;
-    } else {
-      alert(
-        `Невозможно создать новый табель.\n\nТабель для времени "${data.time}" и рабочего места "${data.workplace}" сейчас заполняется.\nЕго начал: ${checkResult.existingInspector}\n\nСначала удалите существующий табель из общего списка.`
-      );
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || 'Не удалось создать табель');
+      await updateWorkplaces();
       return;
     }
+
+    const created = await res.json();
+    window.location.href = `/edit.html?file=${encodeURIComponent(created.filename)}`;
+  } catch (err) {
+    alert('Ошибка создания табеля. Проверьте подключение к сети.');
   }
-
-  // Создание табеля
-  const res = await fetch('/api/timesheets', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-
-  const created = await res.json();
-  window.location.href = `/edit.html?file=${encodeURIComponent(created.filename)}`;
 });
 
-// Загрузка списка времён при открытии страницы
-loadTimes();
+loadWorkplaces();

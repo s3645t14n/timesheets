@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <link rel="manifest" href="/manifest.json">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Новый табель</title>
@@ -14,16 +13,12 @@
     <h1>Новый табель</h1>
     <form id="create-form">
       <div class="form-fields">
-        <label>Время проверки</label>
-        <select id="time" required></select>
-
         <label>ФИО проверяющего</label>
         <input type="text" id="inspector" required>
         <div class="field-error" id="error-inspector"></div>
 
         <label>Номер рабочего места</label>
-        <input type="text" id="workplace" required>
-        <div class="field-error" id="error-workplace"></div>
+        <select id="workplace" required></select>
       </div>
 
       <div class="buttons">

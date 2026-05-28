@@ -80,3 +80,8 @@ td {
 .report-date a {
   color: #555;
 }
+
+.total-row td {
+  font-weight: bold;
+  background: #f0f0f0;
+}

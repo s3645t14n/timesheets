@@ -63,6 +63,28 @@ body {
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Кнопка руководства в шапке */
+.btn-guide {
+  position: absolute;
+  right: 56px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: bold;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-guide:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 /* Основной контейнер */
 .container {
   max-width: 480px;
@@ -72,7 +94,6 @@ body {
   padding-bottom: 80px;
 }
 
-/* Узкий контейнер для форм */
 .container-narrow {
   max-width: 480px;
 }
@@ -84,7 +105,6 @@ body {
   gap: 8px;
 }
 
-/* Планшет: 2 колонки */
 @media (min-width: 600px) {
   .timesheets-grid {
     grid-template-columns: 1fr 1fr;
@@ -95,7 +115,6 @@ body {
   }
 }
 
-/* Десктоп: 3 колонки */
 @media (min-width: 960px) {
   .timesheets-grid {
     grid-template-columns: 1fr 1fr 1fr;
@@ -197,6 +216,14 @@ select:focus, input:focus {
 
 .form-fields {
   margin-bottom: 20px;
+}
+
+/* Сообщение об ошибке валидации */
+.field-error {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 4px;
+  min-height: 16px;
 }
 
 /* --- Кнопки действий --- */
@@ -307,7 +334,13 @@ button:disabled {
   line-height: 1.3;
 }
 
-/* Группа радиокнопок 0-1-2 — на всю ширину */
+.max-score {
+  font-size: 12px;
+  color: #999;
+  font-weight: normal;
+}
+
+/* Группа радиокнопок 0-1-2 */
 .radio-group {
   display: flex;
   gap: 12px;
@@ -315,47 +348,36 @@ button:disabled {
 
 .radio-option {
   flex: 1;
-  text-align: center;
 }
 
 .radio-option label {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  cursor: pointer;
+  padding: 8px 4px;
+  border-radius: 6px;
   font-weight: normal;
   font-size: 16px;
-  margin: 0;
-  cursor: pointer;
+  text-align: center;
+}
+
+.radio-option label:has(input:checked) {
+  background: #e8f5e9;
 }
 
 .radio-option input[type="radio"] {
   width: 20px;
   height: 20px;
   accent-color: #3498db;
+  flex-shrink: 0;
 }
 
 .option-desc {
   font-size: 11px;
-  color: #999;
+  color: #666;
   margin-top: 4px;
   line-height: 1.3;
-}
-
-.radio-group label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: normal;
-  font-size: 16px;
-  margin: 0;
-  cursor: pointer;
-}
-
-.radio-group input[type="radio"] {
-  width: 20px;
-  height: 20px;
-  accent-color: #3498db;
 }
 
 /* --- Пустой список --- */
@@ -420,6 +442,29 @@ button:disabled {
   background: #1a252f;
 }
 
+/* --- Плавающее окошко итогового балла --- */
+.total-score-widget {
+  position: fixed;
+  top: 52px;
+  right: 16px;
+  background: #2c3e50;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 150;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* --- Бейдж итогового балла на карточке табеля --- */
+.total-badge {
+  font-size: 13px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-top: 4px;
+}
+
 /* --- Футер --- */
 .app-footer {
   text-align: center;
@@ -441,61 +486,22 @@ button:disabled {
   text-decoration: underline;
 }
 
-/* Сообщение об ошибке валидации */
-.field-error {
-  color: #e74c3c;
-  font-size: 12px;
-  margin-top: 4px;
-  min-height: 16px;
+/* Удалённый табель */
+.timesheet-item.deleted {
+  opacity: 0.5;
+  border-left: 4px solid #999;
 }
 
-/* Кнопка руководства в шапке */
-.btn-guide {
-  position: absolute;
-  right: 56px;
-  color: #fff;
-  text-decoration: none;
-  font-size: 16px;
-  font-weight: bold;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.btn-guide:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.max-score {
-  font-size: 12px;
+.deleted-badge {
   color: #999;
-  font-weight: normal;
-}
-
-/* Плавающее окошко итогового балла */
-.total-score-widget {
-  position: fixed;
-  top: 52px;
-  right: 16px;
-  background: #2c3e50;
-  color: #fff;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: bold;
-  z-index: 150;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-/* Бейдж итогового балла на карточке табеля */
-.total-badge {
-  font-size: 13px;
-  font-weight: bold;
-  color: #2c3e50;
   margin-top: 4px;
+}
+
+.page-desc {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 16px;
+  text-align: center;
 }

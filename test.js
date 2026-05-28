@@ -19,33 +19,24 @@ async function getConfig() {
   return await res.json();
 }
 
-async function checkDuplicate(time, workplace) {
-  const res = await fetch(`${BASE_URL}/api/timesheets/check-duplicate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ time, workplace })
-  });
-  return await res.json();
-}
-
-async function createTimesheet(time, inspector, workplace, overwrite = null) {
-  const body = { time, inspector, workplace };
-  if (overwrite) {
-    body.overwrite = overwrite;
-  }
+async function createTimesheet(inspector, workplace) {
   const res = await fetch(`${BASE_URL}/api/timesheets`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ inspector, workplace })
   });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Ошибка создания');
+  }
   return await res.json();
 }
 
-async function saveScores(filename, scores, totalScore) {
+async function saveScores(filename, scores, totalScore, percent) {
   await fetch(`${BASE_URL}/api/timesheets/${filename}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scores, totalScore })
+    body: JSON.stringify({ scores, totalScore, percent })
   });
 }
 
@@ -61,35 +52,21 @@ async function main() {
   const config = await getConfig();
 
   console.log('Начинаю тестирование...');
-  console.log(`Времён проверки: ${config.times.length}`);
   console.log(`Критериев: ${config.criteria.length}`);
+  console.log(`Макс. рабочих мест: ${config.maxWorkplaces}`);
+  console.log(`Макс. итог: ${config.maxTotalScore}`);
   console.log('Создаю табель каждые 2 секунды...\n');
 
   let count = 0;
 
   const createAndFill = async () => {
-    const time = randomItem(config.times);
     const inspector = randomItem(inspectors);
-    const workplace = String(Math.floor(Math.random() * 20) + 1);
+    const workplace = String(Math.floor(Math.random() * config.maxWorkplaces) + 1);
 
     try {
-      const check = await checkDuplicate(time, workplace);
-      let ts;
+      const ts = await createTimesheet(inspector, workplace);
+      console.log(`[${new Date().toLocaleTimeString()}] Создан: место ${workplace} (${inspector})`);
 
-      if (check.duplicate) {
-        if (check.existingComplete) {
-          console.log(`[${new Date().toLocaleTimeString()}] Найден заполненный дубликат: ${time}, место ${workplace} (${check.existingInspector}). Перезаписываю...`);
-          ts = await createTimesheet(time, inspector, workplace, check.existingFile);
-        } else {
-          console.log(`[${new Date().toLocaleTimeString()}] Пропущен (заполняется): ${time}, место ${workplace} (начал ${check.existingInspector})`);
-          return;
-        }
-      } else {
-        ts = await createTimesheet(time, inspector, workplace);
-        console.log(`[${new Date().toLocaleTimeString()}] Создан: ${time}, место ${workplace} (${inspector})`);
-      }
-
-      // Генерируем случайные оценки и считаем итог
       const scores = {};
       let totalScore = 0;
       for (const crit of config.criteria) {
@@ -98,12 +75,15 @@ async function main() {
         totalScore += crit.maxScore * (value / 2);
       }
 
-      await saveScores(ts.filename, scores, totalScore);
-      console.log(`[${new Date().toLocaleTimeString()}] Заполнен: ${ts.filename}, итог: ${totalScore.toFixed(1)}`);
+      const maxTotal = config.maxTotalScore || 75;
+      const percent = maxTotal > 0 ? parseFloat(((totalScore / maxTotal) * 100).toFixed(1)) : 0;
+
+      await saveScores(ts.filename, scores, totalScore, percent);
+      console.log(`[${new Date().toLocaleTimeString()}] Заполнен: ${ts.filename}, итог: ${totalScore.toFixed(1)} (${percent}%)`);
       count++;
       console.log(`  Всего создано: ${count}\n`);
     } catch (err) {
-      console.error(`  Ошибка: ${err.message}\n`);
+      console.log(`[${new Date().toLocaleTimeString()}] Пропущено место ${workplace}: ${err.message}\n`);
     }
   };
 
