@@ -36,20 +36,30 @@ function renderMeta() {
 function renderCriteria() {
   criteriaListEl.innerHTML = configData.criteria.map(crit => {
     const savedValue = timesheetData.scores[crit.id];
+    const options = crit.options || ['', '', ''];
+
     return `
       <div class="criterion">
         <div class="criterion-name">Критерий ${crit.id}</div>
         <div class="criterion-desc">${crit.description}</div>
         <div class="radio-group">
-          <label><input type="radio" name="crit_${crit.id}" value="0" ${savedValue === 0 ? 'checked' : ''}> 0</label>
-          <label><input type="radio" name="crit_${crit.id}" value="1" ${savedValue === 1 ? 'checked' : ''}> 1</label>
-          <label><input type="radio" name="crit_${crit.id}" value="2" ${savedValue === 2 ? 'checked' : ''}> 2</label>
+          <div class="radio-option">
+            <label><input type="radio" name="crit_${crit.id}" value="0" ${savedValue === 0 ? 'checked' : ''}> 0</label>
+            <div class="option-desc">${options[0]}</div>
+          </div>
+          <div class="radio-option">
+            <label><input type="radio" name="crit_${crit.id}" value="1" ${savedValue === 1 ? 'checked' : ''}> 1</label>
+            <div class="option-desc">${options[1]}</div>
+          </div>
+          <div class="radio-option">
+            <label><input type="radio" name="crit_${crit.id}" value="2" ${savedValue === 2 ? 'checked' : ''}> 2</label>
+            <div class="option-desc">${options[2]}</div>
+          </div>
         </div>
       </div>
     `;
   }).join('');
 
-  // Отслеживание изменения любой радиокнопки
   criteriaListEl.querySelectorAll('input[type="radio"]').forEach(radio => {
     radio.addEventListener('change', checkAllScored);
   });

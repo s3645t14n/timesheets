@@ -21,10 +21,29 @@ btnCancel.addEventListener('click', () => {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  const inspector = inputInspector.value.trim();
+  const workplace = inputWorkplace.value.trim();
+
+  // Валидация ФИО — только буквы (русские и латинские), точки, пробелы
+  const nameRegex = /^[a-zA-Zа-яА-ЯёЁ .]+$/;
+  if (!nameRegex.test(inspector)) {
+    alert('ФИО может содержать только буквы, точки и пробелы.');
+    inputInspector.focus();
+    return;
+  }
+
+  // Валидация номера рабочего места — только цифры
+  const workplaceRegex = /^\d+$/;
+  if (!workplaceRegex.test(workplace)) {
+    alert('Номер рабочего места может содержать только цифры.');
+    inputWorkplace.focus();
+    return;
+  }
+
   const data = {
     time: selectTime.value,
-    inspector: inputInspector.value.trim(),
-    workplace: inputWorkplace.value.trim()
+    inspector: inspector,
+    workplace: workplace
   };
 
   // Проверка на дубликат (время + рабочее место)
@@ -35,9 +54,8 @@ form.addEventListener('submit', async (e) => {
   });
   const checkResult = await checkRes.json();
 
-  // Дубликат найден
+  // Если дубликат найден — запрос на перезапись или отмену
   if (checkResult.duplicate) {
-    // Заполненный табель — предлагаем перезаписать
     if (checkResult.existingComplete) {
       const choice = confirm(
         `Табель для времени "${data.time}" и рабочего места "${data.workplace}" уже заполнен.\n\nЕго внёс: ${checkResult.existingInspector}\n\nНажмите "ОК", чтобы перезаписать, или "Отмена" для возврата.`
@@ -45,7 +63,6 @@ form.addEventListener('submit', async (e) => {
       if (!choice) return;
       data.overwrite = checkResult.existingFile;
     } else {
-      // Незаполненный табель — перезапись запрещена, только через удаление
       alert(
         `Невозможно создать новый табель.\n\nТабель для времени "${data.time}" и рабочего места "${data.workplace}" сейчас заполняется.\nЕго начал: ${checkResult.existingInspector}\n\nСначала удалите существующий табель из общего списка.`
       );
@@ -53,7 +70,7 @@ form.addEventListener('submit', async (e) => {
     }
   }
 
-  // Создание табеля (файл создаётся сразу — блокирует место)
+  // Создание табеля
   const res = await fetch('/api/timesheets', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -61,7 +78,6 @@ form.addEventListener('submit', async (e) => {
   });
 
   const created = await res.json();
-  // Переход на страницу редактирования оценок
   window.location.href = `/edit.html?file=${encodeURIComponent(created.filename)}`;
 });
 
