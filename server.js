@@ -208,7 +208,7 @@ function generateReport() {
 </head>
 <body>
 <h1>Сводный отчёт по табелям</h1>
-<p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>`;
+<p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz}) | <a href="/api/config" target="_blank">показать активный конфиг</a></p>`;
 
   for (const time of config.times) {
     const items = grouped[time];
