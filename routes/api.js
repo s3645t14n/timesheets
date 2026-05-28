@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { loadConfig, reloadConfig } = require('../config');
 const { logAction, LOG_FILE } = require('../logger');
-const { escapeHtml, getCurrentCheckTime, makeFilename, getTimesheetPath, getActiveTimesheets, findDuplicate, getAllTimesheets, DATA_DIR } = require('../timesheets');
+const { escapeHtml, getCurrentCheckTime, makeFilename, getTimesheetPath, getActiveTimesheets, findDuplicate, getAllTimesheets, getTimesheetMatrix, getUpcomingShifts, getServerTime, DATA_DIR } = require('../timesheets');
 
 // Чтение тела запроса как JSON
 function parseBody(req) {
@@ -148,6 +148,16 @@ async function apiRouter(req, res) {
     return sendJSON(res, { duplicate: !!duplicate, existingFile: duplicate ? duplicate.filename : null, existingInspector: duplicate ? duplicate.inspector : null, existingComplete: duplicate ? duplicate.complete : null });
   }
 
+  // --- матрица табелей ---
+  if (url === '/api/timesheets/matrix' && method === 'GET') {
+    return sendJSON(res, getTimesheetMatrix());
+  }
+
+  // --- предстоящие смены ---
+  if (url === '/api/timesheets/upcoming' && method === 'GET') {
+    return sendJSON(res, getUpcomingShifts());
+  }
+
   // --- все табели (включая удалённые) ---
   if (url === '/api/timesheets/all' && method === 'GET') {
     return sendJSON(res, getAllTimesheets());
@@ -181,7 +191,7 @@ async function apiRouter(req, res) {
   }
 
   // --- получение одного табеля ---
-  if (url.startsWith('/api/timesheets/') && url !== '/api/timesheets/all' && method === 'GET') {
+  if (url.startsWith('/api/timesheets/') && !url.endsWith('/restore') && !url.endsWith('/all') && method === 'GET') {
     const filename = url.replace('/api/timesheets/', '').split('?')[0];
     const filePath = getTimesheetPath(filename);
     if (!filePath) return sendJSON(res, { error: 'Недопустимое имя файла' }, 400);
@@ -254,6 +264,11 @@ async function apiRouter(req, res) {
     }
   }
 
+  // --- серверное время ---
+  if (url === '/api/server-time' && method === 'GET') {
+    return sendJSON(res, getServerTime());
+  }
+
   // --- конфиг ---
   if (url === '/api/config' && method === 'GET') {
     return sendJSON(res, loadConfig());
@@ -276,7 +291,7 @@ async function apiRouter(req, res) {
     return res.end(generateLog());
   }
 
-  // 404 для неизвестных API-роутов
+  // 404
   res.writeHead(404);
   res.end('API Not found');
 }

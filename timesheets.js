@@ -102,4 +102,105 @@ function getAllTimesheets() {
   return result;
 }
 
-module.exports = { escapeHtml, makeSlug, getCurrentCheckTime, makeFilename, getTimesheetPath, isComplete, getActiveTimesheets, findDuplicate, getAllTimesheets, DATA_DIR };
+function getTimesheetMatrix() {
+  const config = loadConfig();
+  const activeTimesheets = getActiveTimesheets();
+
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  const shifts = [
+    { slug: 'II', label: '2 смена' },
+    { slug: 'I', label: '1 смена' }
+  ];
+
+  const result = [];
+
+  for (const dateStr of config.examDates) {
+    if (dateStr > todayStr) continue;
+
+    const isPast = dateStr < todayStr;
+    const [year, month, day] = dateStr.split('-');
+    const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    const dateDisplay = `${parseInt(day)} ${monthNames[parseInt(month) - 1]}`;
+
+    for (const shift of shifts) {
+      const timeLabel = `${dateDisplay} ${shift.label}`;
+      const dateSlug = `${year}_${month}_${day}`;
+      const workplaces = [];
+
+      for (let w = 1; w <= config.maxWorkplaces; w++) {
+        const filename = `${dateSlug}_${shift.slug}_${w}.json`;
+        const existing = activeTimesheets.find(ts => ts.filename === filename);
+
+        workplaces.push({
+          workplace: String(w),
+          timesheet: existing || null,
+          exists: !!existing,
+          complete: existing ? existing.complete : false,
+          filename: filename,
+          past: isPast
+        });
+      }
+
+      result.push({
+        date: dateStr,
+        dateDisplay: dateDisplay,
+        shift: shift.label,
+        shiftSlug: shift.slug,
+        timeLabel: timeLabel,
+        past: isPast,
+        workplaces: workplaces
+      });
+    }
+  }
+
+  return result;
+}
+
+function getUpcomingShifts() {
+  const config = loadConfig();
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  const shifts = [
+    { slug: 'II', label: '2 смена' },
+    { slug: 'I', label: '1 смена' }
+  ];
+
+  const result = [];
+
+  for (const dateStr of config.examDates) {
+    if (dateStr <= todayStr) continue;
+
+    const [year, month, day] = dateStr.split('-');
+    const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    const dateDisplay = `${parseInt(day)} ${monthNames[parseInt(month) - 1]}`;
+
+    for (const shift of shifts) {
+      result.push({
+        date: dateStr,
+        label: `${dateDisplay}, ${shift.label}`
+      });
+    }
+  }
+
+  return result;
+}
+
+function getServerTime() {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  return {
+    datetime: `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`,
+    tz: tz
+  };
+}
+
+module.exports = { escapeHtml, makeSlug, getCurrentCheckTime, makeFilename, getTimesheetPath, isComplete, getActiveTimesheets, findDuplicate, getAllTimesheets, getTimesheetMatrix, getUpcomingShifts, getServerTime, DATA_DIR };
