@@ -448,3 +448,25 @@ button:disabled {
   margin-top: 4px;
   min-height: 16px;
 }
+
+/* Кнопка руководства в шапке */
+.btn-guide {
+  position: absolute;
+  right: 56px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: bold;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-guide:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
