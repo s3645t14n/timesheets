@@ -148,7 +148,12 @@ async function apiRouter(req, res) {
     return sendJSON(res, { duplicate: !!duplicate, existingFile: duplicate ? duplicate.filename : null, existingInspector: duplicate ? duplicate.inspector : null, existingComplete: duplicate ? duplicate.complete : null });
   }
 
-  // --- список табелей ---
+  // --- все табели (включая удалённые) ---
+  if (url === '/api/timesheets/all' && method === 'GET') {
+    return sendJSON(res, getAllTimesheets());
+  }
+
+  // --- список активных табелей ---
   if (url === '/api/timesheets' && method === 'GET') {
     return sendJSON(res, getActiveTimesheets());
   }
@@ -176,7 +181,7 @@ async function apiRouter(req, res) {
   }
 
   // --- получение одного табеля ---
-  if (url.startsWith('/api/timesheets/') && method === 'GET') {
+  if (url.startsWith('/api/timesheets/') && url !== '/api/timesheets/all' && method === 'GET') {
     const filename = url.replace('/api/timesheets/', '').split('?')[0];
     const filePath = getTimesheetPath(filename);
     if (!filePath) return sendJSON(res, { error: 'Недопустимое имя файла' }, 400);
@@ -253,11 +258,6 @@ async function apiRouter(req, res) {
   if (url === '/api/log' && method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(generateLog());
-  }
-
-  // --- все табели (включая удалённые) ---
-  if (url === '/api/timesheets/all' && method === 'GET') {
-    return sendJSON(res, getAllTimesheets());
   }
 
   // 404 для неизвестных API-роутов
