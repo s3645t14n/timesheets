@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { loadConfig, reloadConfig } = require('../config');
 const { logAction, LOG_FILE } = require('../logger');
-const { escapeHtml, getCurrentCheckTime, makeFilename, getTimesheetPath, getActiveTimesheets, findDuplicate, DATA_DIR } = require('../timesheets');
+const { escapeHtml, getCurrentCheckTime, makeFilename, getTimesheetPath, getActiveTimesheets, findDuplicate, getAllTimesheets, DATA_DIR } = require('../timesheets');
 
 // Чтение тела запроса как JSON
 function parseBody(req) {
