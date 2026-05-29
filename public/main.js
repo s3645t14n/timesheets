@@ -52,7 +52,7 @@ async function loadToday() {
         return `
         <div class="timesheet-item ${statusClass} clickable" ${clickAction}>
           <div class="timesheet-info">
-            <div class="detail">🖳 ${escapeHtml(wp.workplace)}</div>
+            <div class="detail">🖵 M.${escapeHtml(wp.workplace)}</div>
             ${wp.exists ? `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}${wp.timesheet.percent != null ? ' (' + wp.timesheet.percent + '%)' : ''}${wp.timesheet.grade != null ? ' · ' + wp.timesheet.grade : ''}</div>` : ''}
           </div>
           <div class="status-icon">${icon}</div>
@@ -105,7 +105,7 @@ async function loadPast() {
         html += `
         <div class="timesheet-item ${statusClass}">
           <div class="timesheet-info">
-            <div class="detail">🖳 ${escapeHtml(wp.workplace)}</div>
+            <div class="detail">🖵 M.${escapeHtml(wp.workplace)}</div>
             ${info}
           </div>
         </div>`;
