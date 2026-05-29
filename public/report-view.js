@@ -8,13 +8,14 @@ async function loadReport() {
 
     document.getElementById('report-title').textContent = data.title || 'Ведомость';
 
+    // Ссылка на печатную форму
+    const printUrl = reportUrl.replace('/data', '');
+    document.getElementById('print-link').innerHTML = `<a href="${printUrl}" target="_blank">Открыть печатную форму ведомости</a>`;
+
     if (data.empty) {
       document.getElementById('report-table').style.display = 'none';
-      const msg = document.createElement('div');
-      msg.className = 'empty';
-      msg.style.padding = '60px 0';
-      msg.textContent = 'В этой ведомости пока нет заполненных табелей. Ведомость не может быть пустой.';
-      document.querySelector('main.container').appendChild(msg);
+      document.getElementById('empty-message').style.display = 'block';
+      document.getElementById('empty-message').textContent = 'В этой ведомости пока нет заполненных табелей. Ведомость не может быть пустой.';
       return;
     }
 
