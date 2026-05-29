@@ -88,15 +88,12 @@ function generateLogHTML() {
     return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
   }
 
-  function makeLinks(text) {
-    return text.replace(/\/api\/timesheets\/[^\s,]+/g, m => `<a href="${m}" target="_blank">${m}</a>`);
-  }
-
   let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Лог операций</title><link rel="stylesheet" href="/print.css"></head><body><h1>Лог операций</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz}) | <a href="/api/config" target="_blank">Показать активный конфиг</a></p><table><thead><tr><th>Дата и время</th><th>Операция</th><th>Подробности</th><th>Файл</th></tr></thead><tbody>`;
   for (const entry of logEntries) {
     const fileMatch = entry.details ? entry.details.match(/\/api\/timesheets\/[^\s,]+/) : null;
     const fileLink = fileMatch ? `<a href="${fileMatch[0]}" target="_blank">${fileMatch[0].split('/').pop()}</a>` : '—';
-    html += `<tr><td>${formatDT(entry.datetime)}</td><td>${escapeHtml(entry.action)}</td><td>${escapeHtml((entry.details || '-').replace(/\/api\/timesheets\/[^\s,]+/g, '').replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '') || '-')}</td><td>${fileLink}</td></tr>`;
+    const cleanDetails = entry.details ? entry.details.replace(/,\s*Файл:\s*\/api\/timesheets\/[^\s,]+/g, '').trim() : '—';
+    html += `<tr><td>${formatDT(entry.datetime)}</td><td>${escapeHtml(entry.action)}</td><td>${escapeHtml(cleanDetails)}</td><td>${fileLink}</td></tr>`;
   }
   html += `</tbody></table></body></html>`;
   return html;
@@ -104,7 +101,11 @@ function generateLogHTML() {
 
 function getReportData(timeLabel, items, workplaces) {
   const config = loadConfig();
-  const columns = ['Критерий', ...workplaces.map(w => `М.${w}`)];
+  const columns = ['Критерий', ...workplaces.map(w => {
+    const item = items.find(ts => ts.workplace === w);
+    const name = item ? ` (${item.inspector})` : '';
+    return `М.${w}${name}`;
+  })];
   const rows = config.criteria.map(crit => {
     const row = [crit.id];
     for (const wp of workplaces) {
@@ -220,6 +221,7 @@ async function apiRouter(req, res) {
         }
       }
       const existing = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      if (body.inspector != null) existing.inspector = body.inspector;
       existing.scores = body.scores;
       if (body.totalScore != null) existing.totalScore = body.totalScore;
       if (body.percent != null) existing.percent = body.percent;
@@ -255,7 +257,9 @@ async function apiRouter(req, res) {
     try {
       if (!fs.existsSync(deletedPath)) return sendJSON(res, { error: 'Not found' }, 404);
       fs.renameSync(deletedPath, restoredPath);
-      logAction(`Восстановление табеля`, `Файл: /api/timesheets/${restoredName}`);
+      let tsData = {};
+      try { tsData = JSON.parse(fs.readFileSync(restoredPath, 'utf-8')); } catch (err) {}
+      logAction(`Восстановление табеля: ${tsData.time || '?'}, место ${tsData.workplace || '?'}`, `Файл: /api/timesheets/${restoredName}, проверяющий: ${tsData.inspector || '—'}`);
       return sendJSON(res, { ok: true });
     } catch (err) {
       return sendJSON(res, { error: 'Не удалось восстановить табель' }, 500);
@@ -274,6 +278,36 @@ async function apiRouter(req, res) {
     return sendJSON(res, { ok: true, config: reloadConfig() });
   }
 
+  // --- Логирование открытия табеля ---
+  if (url === '/api/log/open' && method === 'POST') {
+    const body = await parseBody(req);
+    const filePath = getTimesheetPath(body.filename);
+    if (!filePath) return sendJSON(res, { error: 'Недопустимое имя файла' }, 400);
+
+    let tsData = {};
+    try { tsData = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch (err) {}
+
+    const action = body.wasComplete
+      ? `Открытие заполненного табеля на изменение: ${tsData.time}, место ${tsData.workplace}`
+      : `Открытие незаполненного табеля на заполнение: ${tsData.time}, место ${tsData.workplace}`;
+    logAction(action, `Проверяющий: ${body.inspector}, Файл: /api/timesheets/${body.filename}`);
+    return sendJSON(res, { ok: true });
+  }
+
+  // --- Логирование изменения оценок ---
+  if (url === '/api/log/score' && method === 'POST') {
+    const body = await parseBody(req);
+    const filePath = getTimesheetPath(body.filename);
+    if (!filePath) return sendJSON(res, { error: 'Недопустимое имя файла' }, 400);
+
+    let tsData = {};
+    try { tsData = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch (err) {}
+
+    logAction(`Изменение оценок: ${tsData.time}, место ${tsData.workplace}`, `Проверяющий: ${body.inspector}, Файл: /api/timesheets/${body.filename}, оценки: ${JSON.stringify(body.scores)}`);
+    return sendJSON(res, { ok: true });
+  }
+
+  // --- Ведомость смены: JSON для DataTables ---
   if (url.startsWith('/api/report/') && url.endsWith('/data') && method === 'GET') {
     const slug = url.replace('/api/report/', '').replace('/data', '').split('?')[0];
     const [year, month, day, shiftSlug] = slug.split('_');
@@ -303,6 +337,7 @@ async function apiRouter(req, res) {
     return sendJSON(res, getReportData(timeLabel, items, workplaces));
   }
 
+  // --- Ведомость смены: HTML для печати ---
   if (url.startsWith('/api/report/') && method === 'GET') {
     const slug = url.replace('/api/report/', '').split('?')[0];
     const [year, month, day, shiftSlug] = slug.split('_');
@@ -330,6 +365,7 @@ async function apiRouter(req, res) {
     return res.end(html);
   }
 
+  // --- Общая ведомость: HTML ---
   if (url === '/api/report' && method === 'GET') {
     const config = loadConfig();
     const allTimesheets = getActiveTimesheets();
@@ -353,35 +389,11 @@ async function apiRouter(req, res) {
     return res.end(html);
   }
 
-  if (url === '/api/report/data' && method === 'GET') {
-    const config = loadConfig();
-    const allTimesheets = getActiveTimesheets();
-    const timesheets = allTimesheets.filter(ts => ts.complete);
-    timesheets.sort((a, b) => parseInt(a.workplace) - parseInt(b.workplace));
-
-    const workplaces = [...new Set(timesheets.map(ts => ts.workplace))];
-    return sendJSON(res, getReportData('Сводная ведомость', timesheets, workplaces));
-  }
-
+  // --- Лог операций ---
   if (url === '/api/log' && method === 'GET') {
     const html = generateLogHTML();
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(html);
-  }
-
-  if (url === '/api/log/open' && method === 'POST') {
-    const body = await parseBody(req);
-    const action = body.wasComplete
-      ? `Открытие заполненного табеля на изменение: ${body.filename}`
-      : `Открытие незаполненного табеля на заполнение: ${body.filename}`;
-    logAction(action, `Проверяющий: ${body.inspector}`);
-    return sendJSON(res, { ok: true });
-  }
-
-  if (url === '/api/log/score' && method === 'POST') {
-    const body = await parseBody(req);
-    logAction(`Изменение оценок: ${body.filename}`, `Проверяющий: ${body.inspector}, оценки: ${JSON.stringify(body.scores)}`);
-    return sendJSON(res, { ok: true });
   }
 
   res.writeHead(404);

@@ -7,18 +7,15 @@ const heading = document.querySelector('h1');
 const params = new URLSearchParams(window.location.search);
 const workplace = params.get('workplace');
 const shift = params.get('shift') || 'I';
-const editFile = params.get('edit'); // если редактируем существующий
-
-let existingData = null;
+const editFile = params.get('edit');
 
 async function init() {
   if (editFile) {
-    // Режим редактирования
     heading.textContent = 'Редактирование табеля';
     try {
       const res = await fetch(`/api/timesheets/${encodeURIComponent(editFile)}`);
-      existingData = await res.json();
-      inputInspector.value = existingData.inspector || '';
+      const existing = await res.json();
+      inputInspector.value = existing.inspector || '';
     } catch (err) {
       alert('Не удалось загрузить табель');
       window.location.href = '/';
@@ -50,14 +47,17 @@ form.addEventListener('submit', async (e) => {
 
   try {
     if (editFile) {
-      // Редактирование существующего: обновляем ФИО и переходим к критериям
-      const payload = { inspector: inspector };
-      if (existingData) {
-        payload.scores = existingData.scores || {};
-        payload.totalScore = existingData.totalScore || 0;
-        payload.percent = existingData.percent || 0;
-        payload.grade = existingData.grade || null;
-      }
+      const res = await fetch(`/api/timesheets/${encodeURIComponent(editFile)}`);
+      const existing = await res.json();
+
+      const payload = {
+        inspector: inspector,
+        scores: existing.scores || {},
+        totalScore: existing.totalScore || 0,
+        percent: existing.percent || 0,
+        grade: existing.grade || null
+      };
+
       await fetch(`/api/timesheets/${encodeURIComponent(editFile)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -65,7 +65,6 @@ form.addEventListener('submit', async (e) => {
       });
       window.location.href = `/edit.html?file=${encodeURIComponent(editFile)}`;
     } else {
-      // Создание нового
       const res = await fetch('/api/timesheets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
