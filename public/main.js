@@ -30,46 +30,37 @@ async function loadToday() {
         <a href="${reportUrl}" target="_blank" class="btn-report-shift" title="Ведомость смены">📋</a>
       </div>`;
 
+      html += `<div class="timesheet-item label-item">
+        <div class="label-text">Рабочие<br>места</div>
+      </div>`;
+
       html += group.workplaces.map(wp => {
         let statusClass = 'status-missing';
-        let button = `<button class="btn-create-ts btn-icon" data-workplace="${escapeHtml(wp.workplace)}" data-shift="${escapeHtml(group.shiftSlug)}" title="Создать">+</button>`;
+        let icon = '+';
+        let clickAction = `onclick="event.stopPropagation();window.location.href='/create.html?workplace=${escapeHtml(wp.workplace)}&shift=${escapeHtml(group.shiftSlug)}'"`;
 
         if (wp.exists && wp.complete) {
           statusClass = 'status-complete';
-          button = `<button class="btn-edit btn-icon" data-filename="${escapeHtml(wp.filename)}" title="Изменить">✎</button>`;
+          icon = '✓';
+          clickAction = `onclick="event.stopPropagation();if(confirm('Табель рабочего места ${escapeHtml(wp.workplace)} смены «${escapeHtml(group.shift)}» уже заполнен экспертом ${escapeHtml(wp.timesheet.inspector)}. Точно хотите изменить его?'))window.location.href='/edit.html?file=${encodeURIComponent(wp.filename)}'"`;
         } else if (wp.exists && !wp.complete) {
           statusClass = 'status-incomplete';
-          button = `<button class="btn-continue btn-icon" data-filename="${escapeHtml(wp.filename)}" title="Продолжить">✎</button>`;
+          icon = '✎';
+          clickAction = `onclick="event.stopPropagation();window.location.href='/edit.html?file=${encodeURIComponent(wp.filename)}'"`;
         }
 
         return `
-        <div class="timesheet-item ${statusClass}">
+        <div class="timesheet-item ${statusClass} clickable" ${clickAction}>
           <div class="timesheet-info">
-            <div class="detail">М.${escapeHtml(wp.workplace)}</div>
+            <div class="detail">💻 ${escapeHtml(wp.workplace)}</div>
             ${wp.exists ? `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}${wp.timesheet.percent != null ? ' (' + wp.timesheet.percent + '%)' : ''}${wp.timesheet.grade != null ? ' · ' + wp.timesheet.grade : ''}</div>` : ''}
           </div>
-          ${button}
+          <div class="status-icon">${icon}</div>
         </div>`;
       }).join('');
     }
 
     todayEl.innerHTML = html;
-
-    todayEl.querySelectorAll('.btn-create-ts').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const wp = btn.dataset.workplace;
-        const shift = btn.dataset.shift;
-        window.location.href = `/create.html?workplace=${encodeURIComponent(wp)}&shift=${encodeURIComponent(shift)}`;
-      });
-    });
-
-    todayEl.querySelectorAll('.btn-continue, .btn-edit').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        window.location.href = '/edit.html?file=' + encodeURIComponent(btn.dataset.filename);
-      });
-    });
 
   } catch (err) {
     todayEl.innerHTML = '<div class="empty">Ошибка загрузки</div>';
@@ -114,7 +105,7 @@ async function loadPast() {
         html += `
         <div class="timesheet-item ${statusClass}">
           <div class="timesheet-info">
-            <div class="detail">М.${escapeHtml(wp.workplace)}</div>
+            <div class="detail">💻 ${escapeHtml(wp.workplace)}</div>
             ${info}
           </div>
         </div>`;

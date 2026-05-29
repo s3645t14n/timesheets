@@ -5,8 +5,7 @@ function escapeHtml(str) {
 
 const metaEl = document.getElementById('meta');
 const criteriaListEl = document.getElementById('criteria-list');
-const btnSave = document.getElementById('btn-save');
-const btnCancel = document.getElementById('btn-cancel');
+const btnBack = document.getElementById('btn-back');
 const footerScore = document.getElementById('footer-score');
 const btnScrollTop = document.getElementById('btn-scroll-top');
 const btnScrollBottom = document.getElementById('btn-scroll-bottom');
@@ -125,33 +124,27 @@ function updateFooter() {
   const { totalScore, percent, grade } = calculateScores();
   footerScore.textContent = `Итог: ${totalScore.toFixed(1)} (${percent}%) Оценка: ${grade}`;
 
-  let allScored = true;
   configData.criteria.forEach(crit => {
     const radio = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]:checked`);
     const criterionEl = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]`)?.closest('.criterion');
     if (criterionEl) {
       if (radio) criterionEl.classList.add('scored');
-      else { criterionEl.classList.remove('scored'); allScored = false; }
-    } else { allScored = false; }
+      else criterionEl.classList.remove('scored');
+    }
   });
-
-  btnSave.disabled = !allScored;
 }
 
-btnSave.addEventListener('click', async () => {
+btnBack.addEventListener('click', async () => {
   const { scores, totalScore, percent, grade } = calculateScores();
   try {
-    const res = await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
+    await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scores, totalScore, percent, grade })
     });
-    if (!res.ok) alert('Табель был удалён. Сохранение невозможно.');
-  } catch (err) { alert('Ошибка сохранения.'); }
+  } catch (err) {}
   window.location.href = '/';
 });
-
-btnCancel.addEventListener('click', () => { window.location.href = '/'; });
 
 btnScrollTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 btnScrollBottom.addEventListener('click', () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
@@ -183,6 +176,15 @@ async function initClock() {
     setInterval(updateClock, 1000);
   } catch (err) {}
 }
+
+const btnScrollUnfilled = document.getElementById('btn-scroll-unfilled');
+
+btnScrollUnfilled.addEventListener('click', () => {
+  const unscored = document.querySelector('.criterion:not(.scored)');
+  if (unscored) {
+    unscored.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
 
 initClock();
 loadData();
