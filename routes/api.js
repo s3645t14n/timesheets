@@ -92,9 +92,11 @@ function generateLogHTML() {
     return text.replace(/\/api\/timesheets\/[^\s,]+/g, m => `<a href="${m}" target="_blank">${m}</a>`);
   }
 
-  let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Лог операций</title><link rel="stylesheet" href="/print.css"></head><body><h1>Лог операций</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz}) | <a href="/api/config" target="_blank">Показать активный конфиг</a></p><table><thead><tr><th>Дата и время</th><th>Операция</th><th>Подробности</th></tr></thead><tbody>`;
+  let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Лог операций</title><link rel="stylesheet" href="/print.css"></head><body><h1>Лог операций</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz}) | <a href="/api/config" target="_blank">Показать активный конфиг</a></p><table><thead><tr><th>Дата и время</th><th>Операция</th><th>Подробности</th><th>Файл</th></tr></thead><tbody>`;
   for (const entry of logEntries) {
-    html += `<tr><td>${formatDT(entry.datetime)}</td><td>${escapeHtml(entry.action)}</td><td>${makeLinks(escapeHtml(entry.details || '-'))}</td></tr>`;
+    const fileMatch = entry.details ? entry.details.match(/\/api\/timesheets\/[^\s,]+/) : null;
+    const fileLink = fileMatch ? `<a href="${fileMatch[0]}" target="_blank">${fileMatch[0].split('/').pop()}</a>` : '—';
+    html += `<tr><td>${formatDT(entry.datetime)}</td><td>${escapeHtml(entry.action)}</td><td>${escapeHtml((entry.details || '-').replace(/\/api\/timesheets\/[^\s,]+/g, '').replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '') || '-')}</td><td>${fileLink}</td></tr>`;
   }
   html += `</tbody></table></body></html>`;
   return html;

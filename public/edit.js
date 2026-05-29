@@ -12,7 +12,6 @@ const btnScrollBottom = document.getElementById('btn-scroll-bottom');
 const btnScrollUnfilled = document.getElementById('btn-scroll-unfilled');
 const params = new URLSearchParams(window.location.search);
 const filename = params.get('file');
-const inspectorParam = params.get('inspector');
 
 let timesheetData = null;
 let configData = null;
@@ -26,18 +25,11 @@ async function loadData() {
     timesheetData = await tsRes.json();
     configData = await cfgRes.json();
 
-    // Обновление ФИО
-    if (inspectorParam && inspectorParam !== timesheetData.inspector) {
-      timesheetData.inspector = inspectorParam;
-      const payload = { scores: timesheetData.scores, totalScore: timesheetData.totalScore, percent: timesheetData.percent, grade: timesheetData.grade, inspector: inspectorParam };
-      await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+    if (!timesheetData.inspector) {
+      window.location.href = `/create.html?edit=${encodeURIComponent(filename)}`;
+      return;
     }
 
-    // Логирование открытия
     await fetch('/api/log/open', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
