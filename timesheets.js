@@ -111,10 +111,10 @@ function getTodayTimesheets() {
   const allActive = getActiveTimesheets();
   const { dateSlug, dateDisplay } = getCurrentDateSlug();
 
-  const shifts = [
-    { slug: 'I', label: '1 смена' },
-    { slug: 'II', label: '2 смена' }
-  ];
+  const shifts = [];
+  const shiftsPerDay = config.shiftsPerDay || 2;
+  if (shiftsPerDay >= 1) shifts.push({ slug: 'I', label: '1 смена' });
+  if (shiftsPerDay >= 2) shifts.push({ slug: 'II', label: '2 смена' });
 
   const result = [];
 
@@ -139,6 +139,7 @@ function getTodayTimesheets() {
       shift: shift.label,
       shiftSlug: shift.slug,
       timeLabel: timeLabel,
+      dateSlug: dateSlug,
       workplaces: workplaces
     });
   }
@@ -155,6 +156,7 @@ function getPastShifts() {
   const pastMap = {};
 
   for (const ts of allTimesheets) {
+    if (ts.deleted) continue;
     const match = ts.filename.match(/^(\d{4}_\d{2}_\d{2})_(I|II)_/);
     if (!match) continue;
 
@@ -211,36 +213,6 @@ function getPastShifts() {
   return Object.values(pastMap).sort((a, b) => b.date.localeCompare(a.date));
 }
 
-function getPastShiftDetail(slug) {
-  const config = loadConfig();
-  const allTimesheets = getAllTimesheets();
-  const [year, month, day, shiftSlug] = slug.split('_');
-  const dateSlug = `${year}_${month}_${day}`;
-
-  const shiftLabel = shiftSlug === 'I' ? '1 смена' : '2 смена';
-  const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-  const dateDisplay = `${parseInt(day)} ${monthNames[parseInt(month) - 1]}`;
-
-  const workplaces = [];
-
-  for (let w = 1; w <= config.maxWorkplaces; w++) {
-    const filename = `${dateSlug}_${shiftSlug}_${w}.json`;
-    const existing = allTimesheets.find(ts => ts.filename === filename);
-    const deleted = allTimesheets.find(ts => ts.filename === filename.replace('.json', '_d.json'));
-
-    workplaces.push({
-      workplace: String(w),
-      timesheet: existing || deleted || null,
-      exists: !!(existing || deleted)
-    });
-  }
-
-  return {
-    timeLabel: `${dateDisplay} ${shiftLabel}`,
-    workplaces: workplaces
-  };
-}
-
 function getServerTime() {
   const now = new Date();
   const day = String(now.getDate()).padStart(2, '0');
@@ -253,4 +225,4 @@ function getServerTime() {
   return { datetime: `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`, tz: tz };
 }
 
-module.exports = { escapeHtml, makeSlug, getCurrentDateSlug, makeTimeLabel, makeFilename, getTimesheetPath, isComplete, getActiveTimesheets, findDuplicate, getAllTimesheets, getTodayTimesheets, getPastShifts, getPastShiftDetail, getServerTime, DATA_DIR };
+module.exports = { escapeHtml, makeSlug, getCurrentDateSlug, makeTimeLabel, makeFilename, getTimesheetPath, isComplete, getActiveTimesheets, findDuplicate, getAllTimesheets, getTodayTimesheets, getPastShifts, getServerTime, DATA_DIR };

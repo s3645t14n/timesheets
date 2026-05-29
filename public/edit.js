@@ -1,29 +1,18 @@
-// Экранирование HTML
 function escapeHtml(str) {
   if (str == null) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// Элементы страницы
 const metaEl = document.getElementById('meta');
 const criteriaListEl = document.getElementById('criteria-list');
 const btnSave = document.getElementById('btn-save');
 const btnCancel = document.getElementById('btn-cancel');
-
-// Имя файла табеля из URL-параметра
 const params = new URLSearchParams(window.location.search);
 const filename = params.get('file');
 
-// Данные, загруженные с сервера
 let timesheetData = null;
 let configData = null;
 
-// Загрузка табеля и конфига с сервера
 async function loadData() {
   try {
     const [tsRes, cfgRes] = await Promise.all([
@@ -34,11 +23,10 @@ async function loadData() {
     configData = await cfgRes.json();
     render();
   } catch (err) {
-    alert('Не удалось загрузить данные. Проверьте подключение к сети.');
+    alert('Не удалось загрузить данные.');
   }
 }
 
-// Единая функция расчёта оценок, итога и процента
 function calculateScores() {
   const scores = {};
   let totalScore = 0;
@@ -55,29 +43,35 @@ function calculateScores() {
   const maxTotal = configData.maxTotalScore || 75;
   const percent = maxTotal > 0 ? parseFloat(((totalScore / maxTotal) * 100).toFixed(1)) : 0;
 
-  return { scores, totalScore, percent };
+  let grade = '—';
+  if (configData.gradeScale && percent > 0) {
+    for (const g of configData.gradeScale) {
+      if (percent >= g.min && percent <= g.max) {
+        grade = g.grade;
+        break;
+      }
+    }
+  }
+
+  return { scores, totalScore, percent, grade };
 }
 
-// Сохранение оценок, итога и процента на сервер
 async function autoSave() {
-  const { scores, totalScore, percent } = calculateScores();
-
+  const { scores, totalScore, percent, grade } = calculateScores();
   timesheetData.scores = scores;
   timesheetData.totalScore = totalScore;
   timesheetData.percent = percent;
+  timesheetData.grade = grade;
 
   try {
     await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scores, totalScore, percent })
+      body: JSON.stringify({ scores, totalScore, percent, grade })
     });
-  } catch (err) {
-    // Молча игнорируем ошибку автосохранения
-  }
+  } catch (err) {}
 }
 
-// Отображение метаданных табеля
 function renderMeta() {
   metaEl.innerHTML = `
     <div class="meta-row"><span class="meta-label">Время:</span> ${escapeHtml(timesheetData.time)}</div>
@@ -86,7 +80,6 @@ function renderMeta() {
   `;
 }
 
-// Отображение списка критериев с радиокнопками
 function renderCriteria() {
   criteriaListEl.innerHTML = configData.criteria.map(crit => {
     const savedValue = timesheetData.scores[crit.id];
@@ -128,68 +121,49 @@ function renderCriteria() {
   });
 }
 
-// Проверка, все ли критерии оценены, подсветка и обновление итога
 function checkAllScored() {
-  const { totalScore, percent } = calculateScores();
+  const { totalScore, percent, grade } = calculateScores();
 
   let allScored = true;
   configData.criteria.forEach(crit => {
     const radio = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]:checked`);
     const criterionEl = criteriaListEl.querySelector(`input[name="crit_${crit.id}"]`)?.closest('.criterion');
-
     if (criterionEl) {
-      if (radio) {
-        criterionEl.classList.add('scored');
-      } else {
-        criterionEl.classList.remove('scored');
-        allScored = false;
-      }
-    } else {
-      allScored = false;
-    }
+      if (radio) criterionEl.classList.add('scored');
+      else { criterionEl.classList.remove('scored'); allScored = false; }
+    } else { allScored = false; }
   });
 
   btnSave.disabled = !allScored;
 
   const totalEl = document.getElementById('total-score');
   if (totalEl) {
-    totalEl.textContent = `Итог: ${totalScore.toFixed(1)} (${percent}%)`;
+    totalEl.textContent = `Итог: ${totalScore.toFixed(1)} (${percent}%) Оценка: ${grade}`;
   }
 }
 
-// Кнопка сохранения — финальное сохранение и возврат на главную
 btnSave.addEventListener('click', async () => {
-  const { scores, totalScore, percent } = calculateScores();
+  const { scores, totalScore, percent, grade } = calculateScores();
 
   try {
     const res = await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scores, totalScore, percent })
+      body: JSON.stringify({ scores, totalScore, percent, grade })
     });
-
-    if (!res.ok) {
-      alert('Этот табель был удалён другим пользователем. Сохранение невозможно.');
-    }
+    if (!res.ok) alert('Табель был удалён. Сохранение невозможно.');
   } catch (err) {
-    alert('Ошибка сохранения. Проверьте подключение к сети.');
+    alert('Ошибка сохранения.');
   }
 
   window.location.href = '/';
 });
 
-// Кнопка отмены — возврат на главную
-btnCancel.addEventListener('click', () => {
-  window.location.href = '/';
-});
+btnCancel.addEventListener('click', () => { window.location.href = '/'; });
 
-// Первичный рендер после загрузки данных
-function render() {
-  renderMeta();
-  renderCriteria();
-  checkAllScored();
-}
+function render() { renderMeta(); renderCriteria(); checkAllScored(); }
 
+// Часы
 async function initClock() {
   try {
     const res = await fetch('/api/server-time');
@@ -218,6 +192,4 @@ async function initClock() {
 }
 
 initClock();
-
-// Загрузка данных при открытии страницы
 loadData();

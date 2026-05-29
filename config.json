@@ -1,6 +1,13 @@
 {
   "maxTotalScore": 75,
   "maxWorkplaces": 14,
+  "shiftsPerDay": 2,
+  "gradeScale": [
+    { "min": 90, "max": 100, "grade": 5 },
+    { "min": 65, "max": 89, "grade": 4 },
+    { "min": 50, "max": 64, "grade": 3 },
+    { "min": 0, "max": 49, "grade": 2 }
+  ],
   "criteria": [
     {
       "id": "1.1",

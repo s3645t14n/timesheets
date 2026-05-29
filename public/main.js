@@ -5,8 +5,6 @@ function escapeHtml(str) {
 
 const todayEl = document.getElementById('today-timesheets');
 const pastEl = document.getElementById('past-shifts-list');
-const btnScrollTop = document.getElementById('btn-scroll-top');
-const btnScrollBottom = document.getElementById('btn-scroll-bottom');
 
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -34,14 +32,14 @@ async function loadToday() {
 
       html += group.workplaces.map(wp => {
         let statusClass = 'status-missing';
-        let button = `<button class="btn-create-ts" data-workplace="${escapeHtml(wp.workplace)}" data-shift="${escapeHtml(group.shiftSlug)}">Создать</button>`;
+        let button = `<button class="btn-create-ts btn-icon" data-workplace="${escapeHtml(wp.workplace)}" data-shift="${escapeHtml(group.shiftSlug)}" title="Создать">+</button>`;
 
         if (wp.exists && wp.complete) {
           statusClass = 'status-complete';
-          button = `<button class="btn-edit" data-filename="${escapeHtml(wp.filename)}">Изменить</button>`;
+          button = `<button class="btn-edit btn-icon" data-filename="${escapeHtml(wp.filename)}" title="Изменить">✎</button>`;
         } else if (wp.exists && !wp.complete) {
           statusClass = 'status-incomplete';
-          button = `<button class="btn-continue" data-filename="${escapeHtml(wp.filename)}">Продолжить</button>`;
+          button = `<button class="btn-continue btn-icon" data-filename="${escapeHtml(wp.filename)}" title="Продолжить">✎</button>`;
         }
 
         return `
@@ -132,8 +130,28 @@ async function loadPast() {
   }
 }
 
-btnScrollTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-btnScrollBottom.addEventListener('click', () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+document.addEventListener('touchend', (e) => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const minSwipeDistance = 60;
+  const swipeDistance = touchEndX - touchStartX;
+  if (Math.abs(swipeDistance) < minSwipeDistance) return;
+
+  const tabs = document.querySelectorAll('.tab');
+  const activeTab = document.querySelector('.tab.active');
+  if (!activeTab || tabs.length < 2) return;
+  const currentIndex = Array.from(tabs).indexOf(activeTab);
+
+  if (swipeDistance < 0 && currentIndex < tabs.length - 1) tabs[currentIndex + 1].click();
+  else if (swipeDistance > 0 && currentIndex > 0) tabs[currentIndex - 1].click();
+}
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
@@ -162,41 +180,6 @@ async function initClock() {
     updateClock();
     setInterval(updateClock, 1000);
   } catch (err) {}
-}
-
-// Свайп для переключения вкладок
-let touchStartX = 0;
-let touchEndX = 0;
-
-document.addEventListener('touchstart', (e) => {
-  touchStartX = e.changedTouches[0].screenX;
-});
-
-document.addEventListener('touchend', (e) => {
-  touchEndX = e.changedTouches[0].screenX;
-  handleSwipe();
-});
-
-function handleSwipe() {
-  const minSwipeDistance = 60;
-  const swipeDistance = touchEndX - touchStartX;
-
-  if (Math.abs(swipeDistance) < minSwipeDistance) return;
-
-  const tabs = document.querySelectorAll('.tab');
-  const activeTab = document.querySelector('.tab.active');
-
-  if (!activeTab || tabs.length < 2) return;
-
-  const currentIndex = Array.from(tabs).indexOf(activeTab);
-
-  if (swipeDistance < 0 && currentIndex < tabs.length - 1) {
-    // Свайп влево — следующая вкладка
-    tabs[currentIndex + 1].click();
-  } else if (swipeDistance > 0 && currentIndex > 0) {
-    // Свайп вправо — предыдущая вкладка
-    tabs[currentIndex - 1].click();
-  }
 }
 
 initClock();
