@@ -30,13 +30,16 @@ async function loadData() {
       return;
     }
 
+    const wasComplete = timesheetData.scores && Object.keys(timesheetData.scores).length === configData.criteria.length
+      && configData.criteria.every(crit => timesheetData.scores.hasOwnProperty(crit.id));
+
     await fetch('/api/log/open', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         filename: filename,
         inspector: timesheetData.inspector,
-        wasComplete: timesheetData.complete
+        wasComplete: wasComplete
       })
     });
 
