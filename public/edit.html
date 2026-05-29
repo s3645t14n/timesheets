@@ -13,14 +13,20 @@
     <h1>Оценки</h1>
     <div id="meta"></div>
     <div id="criteria-list"></div>
-    <div class="buttons">
-      <button id="btn-cancel">Отмена</button>
-      <button id="btn-save" disabled>Сохранить табель</button>
-    </div>
-    <div id="total-score" class="total-score-widget">Итог: 0</div>
   </main>
 
-  <!--FOOTER-->
+  <div class="scroll-buttons">
+    <button id="btn-scroll-top" title="В начало">↑</button>
+    <button id="btn-scroll-bottom" title="В конец">↓</button>
+  </div>
+
+  <footer class="edit-footer" id="edit-footer">
+    <span id="footer-score">Итог: 0 (0%) Оценка: —</span>
+    <div class="footer-buttons">
+      <button id="btn-cancel">Отмена</button>
+      <button id="btn-save" disabled>Сохранить</button>
+    </div>
+  </footer>
 
   <script src="/edit.js"></script>
 </body>

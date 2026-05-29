@@ -7,6 +7,9 @@ const metaEl = document.getElementById('meta');
 const criteriaListEl = document.getElementById('criteria-list');
 const btnSave = document.getElementById('btn-save');
 const btnCancel = document.getElementById('btn-cancel');
+const footerScore = document.getElementById('footer-score');
+const btnScrollTop = document.getElementById('btn-scroll-top');
+const btnScrollBottom = document.getElementById('btn-scroll-bottom');
 const params = new URLSearchParams(window.location.search);
 const filename = params.get('file');
 
@@ -46,10 +49,7 @@ function calculateScores() {
   let grade = '—';
   if (configData.gradeScale && percent > 0) {
     for (const g of configData.gradeScale) {
-      if (percent >= g.min && percent <= g.max) {
-        grade = g.grade;
-        break;
-      }
+      if (percent >= g.min && percent <= g.max) { grade = g.grade; break; }
     }
   }
 
@@ -115,14 +115,15 @@ function renderCriteria() {
 
   criteriaListEl.querySelectorAll('input[type="radio"]').forEach(radio => {
     radio.addEventListener('change', async () => {
-      checkAllScored();
+      updateFooter();
       await autoSave();
     });
   });
 }
 
-function checkAllScored() {
+function updateFooter() {
   const { totalScore, percent, grade } = calculateScores();
+  footerScore.textContent = `Итог: ${totalScore.toFixed(1)} (${percent}%) Оценка: ${grade}`;
 
   let allScored = true;
   configData.criteria.forEach(crit => {
@@ -135,16 +136,10 @@ function checkAllScored() {
   });
 
   btnSave.disabled = !allScored;
-
-  const totalEl = document.getElementById('total-score');
-  if (totalEl) {
-    totalEl.textContent = `Итог: ${totalScore.toFixed(1)} (${percent}%) Оценка: ${grade}`;
-  }
 }
 
 btnSave.addEventListener('click', async () => {
   const { scores, totalScore, percent, grade } = calculateScores();
-
   try {
     const res = await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
       method: 'PUT',
@@ -152,18 +147,17 @@ btnSave.addEventListener('click', async () => {
       body: JSON.stringify({ scores, totalScore, percent, grade })
     });
     if (!res.ok) alert('Табель был удалён. Сохранение невозможно.');
-  } catch (err) {
-    alert('Ошибка сохранения.');
-  }
-
+  } catch (err) { alert('Ошибка сохранения.'); }
   window.location.href = '/';
 });
 
 btnCancel.addEventListener('click', () => { window.location.href = '/'; });
 
-function render() { renderMeta(); renderCriteria(); checkAllScored(); }
+btnScrollTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+btnScrollBottom.addEventListener('click', () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
 
-// Часы
+function render() { renderMeta(); renderCriteria(); updateFooter(); }
+
 async function initClock() {
   try {
     const res = await fetch('/api/server-time');
@@ -185,7 +179,6 @@ async function initClock() {
       const el = document.getElementById('server-time');
       if (el) el.textContent = `${d}.${m}.${y} ${h}:${min}:${s} (${data.tz})`;
     }
-
     updateClock();
     setInterval(updateClock, 1000);
   } catch (err) {}
