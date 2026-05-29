@@ -27,7 +27,7 @@ async function loadToday() {
 
       html += `<div class="group-header">
         <h2 class="group-heading">${escapeHtml(group.timeLabel)}</h2>
-        <a href="${reportUrl}" target="_blank" class="btn-report-shift" title="Ведомость смены">
+        <a href="${reportUrl}" class="btn-report-shift" title="Ведомость смены">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#2c3e50">
             <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
           </svg>
@@ -89,7 +89,7 @@ async function loadPast() {
       html += `<div class="past-group">
         <div class="past-group-header">
           <h2 class="past-group-title">${escapeHtml(shift.timeLabel)}</h2>
-          <a href="${reportUrl}" target="_blank" class="btn-report-shift" title="Ведомость смены">
+          <a href="${reportUrl}" class="btn-report-shift" title="Ведомость смены">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#2c3e50">
               <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
             </svg>
