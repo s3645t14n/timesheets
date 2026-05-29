@@ -1,7 +1,16 @@
 <header class="app-header">
-  <span id="server-time" class="server-time"></span>
-  <a href="/api/config" target="_blank" class="btn-header-icon" title="Конфиг">⚙</a>
-  <a href="/api/report" target="_blank" class="btn-header-icon" title="Отчет">📊</a>
-  <a href="/api/log" target="_blank" class="btn-header-icon" title="Журнал">📋</a>
-  <a href="/guide.html" class="btn-guide" title="Руководство">?</a>
+  <div class="header-left">
+    <a href="/" class="btn-home" title="На главную">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+    </a>
+    <span id="server-time" class="server-time"></span>
+  </div>
+  <div class="header-right">
+    <a href="/api/report" target="_blank" class="btn-header-icon" title="Общая ведомость">📄</a>
+    <a href="/api/log" target="_blank" class="btn-header-icon" title="Журнал">🗒</a>
+    <a href="/api/config" target="_blank" class="btn-header-icon" title="Конфиг">⚙</a>
+    <a href="/guide.html" class="btn-header-icon" title="Справка">?</a>
+  </div>
 </header>

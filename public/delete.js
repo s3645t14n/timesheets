@@ -50,7 +50,6 @@ async function loadAll() {
     `;
     }).join('');
 
-    // Удаление
     listEl.querySelectorAll('.btn-delete').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -66,7 +65,6 @@ async function loadAll() {
       });
     });
 
-    // Восстановление
     listEl.querySelectorAll('.btn-restore').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -89,7 +87,6 @@ async function loadAll() {
   }
 }
 
-// Удалить все
 btnDeleteAll.addEventListener('click', async () => {
   if (!confirm('Удалить ВСЕ активные табели? Удалённые останутся без изменений.')) return;
   try {

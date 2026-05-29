@@ -13,11 +13,11 @@ body {
   min-height: 100vh;
 }
 
+/* --- Заголовок приложения --- */
 .app-header {
   background: #2c3e50;
   color: #fff;
-  text-align: center;
-  padding: 8px 16px;
+  padding: 8px 12px;
   font-size: 15px;
   position: fixed;
   top: 0;
@@ -25,44 +25,47 @@ body {
   width: 100%;
   z-index: 100;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   height: 44px;
 }
 
-.app-header a { color: #fff; text-decoration: none; }
-.app-header a:visited { color: #fff; }
-
-.server-time {
-  position: absolute;
-  left: 12px;
-  color: rgba(255,255,255,0.9);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
-  white-space: nowrap;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 180px;
 }
 
-.btn-guide {
-  position: absolute;
-  right: 16px;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-home {
   color: #fff;
   text-decoration: none;
-  font-size: 15px;
-  font-weight: bold;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
 }
-.btn-guide:hover { background: rgba(255,255,255,0.15); }
+
+.btn-home:hover { background: rgba(255,255,255,0.15); }
+
+.server-time {
+  color: rgba(255,255,255,0.9);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
 
 .btn-header-icon {
-  position: absolute;
   color: #fff;
   text-decoration: none;
   font-size: 18px;
@@ -73,11 +76,10 @@ body {
   justify-content: center;
   border-radius: 6px;
 }
-.btn-header-icon:hover { background: rgba(255,255,255,0.15); }
-.btn-header-icon[title="Конфиг"] { right: 120px; }
-.btn-header-icon[title="Отчет"] { right: 88px; }
-.btn-header-icon[title="Журнал"] { right: 56px; }
 
+.btn-header-icon:hover { background: rgba(255,255,255,0.15); }
+
+/* --- Панель вкладок --- */
 .tab-bar {
   display: flex;
   background: #fff;
@@ -106,12 +108,13 @@ body {
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* --- Контейнер --- */
 .container {
   max-width: 480px;
   margin: 0 auto;
   padding: 8px;
   padding-top: 96px;
-  padding-bottom: 80px;
+  padding-bottom: 60px;
 }
 .container-narrow { max-width: 480px; padding-bottom: 90px; }
 
@@ -182,7 +185,7 @@ body {
 
 .timesheet-info { flex: 1; min-width: 0; overflow: hidden; }
 .timesheet-info .detail {
-  font-size: 16px; margin-top: 1px;
+  font-size: 12px; margin-top: 1px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .timesheet-info .dates {
@@ -190,7 +193,6 @@ body {
   word-break: break-word;
 }
 
-/* Блок-заголовок "Рабочие места" */
 .label-item {
   background: transparent;
   cursor: default;
@@ -208,7 +210,6 @@ body {
   line-height: 1.2;
 }
 
-/* Иконка статуса */
 .status-icon {
   font-size: 16px;
   margin-left: 4px;
@@ -290,7 +291,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .empty { text-align: center; color: #999; padding: 40px 0; font-size: 15px; }
 
-/* Футер редактирования */
+/* --- Футер редактирования --- */
 .edit-footer {
   position: fixed;
   bottom: 0;
@@ -325,7 +326,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .footer-buttons #btn-back { background: #2ecc71; color: #fff; }
 .footer-buttons #btn-back:active { background: #27ae60; }
 
-/* Плавающие кнопки скролла */
+/* --- Плавающие кнопки скролла --- */
 .scroll-buttons {
   position: fixed;
   bottom: 80px;
@@ -355,7 +356,20 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .page-desc { font-size: 13px; color: #888; margin-bottom: 16px; text-align: center; }
 
-.app-footer { text-align: center; padding: 16px; font-size: 12px; color: #999; }
+/* --- Основной футер --- */
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #999;
+  background: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+  z-index: 50;
+}
 .app-footer a { color: #999; text-decoration: none; }
 .app-footer a:visited { color: #999; }
 .app-footer a:hover { text-decoration: underline; }

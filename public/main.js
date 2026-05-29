@@ -27,7 +27,7 @@ async function loadToday() {
 
       html += `<div class="group-header">
         <h2 class="group-heading">${escapeHtml(group.timeLabel)}</h2>
-        <a href="${reportUrl}" target="_blank" class="btn-report-shift" title="Ведомость смены">📋</a>
+        <a href="${reportUrl}" target="_blank" class="btn-report-shift" title="Ведомость смены">📄</a>
       </div>`;
 
       html += `<div class="timesheet-item label-item">
@@ -52,9 +52,7 @@ async function loadToday() {
         return `
         <div class="timesheet-item ${statusClass} clickable" ${clickAction}>
           <div class="timesheet-info">
-            <div class="detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 2px;">
-  <path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/>
-</svg> Место ${escapeHtml(wp.workplace)}</div>
+            <div class="detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 2px;"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/></svg>М.${escapeHtml(wp.workplace)}</div>
             ${wp.exists ? `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}${wp.timesheet.percent != null ? ' (' + wp.timesheet.percent + '%)' : ''}${wp.timesheet.grade != null ? ' · ' + wp.timesheet.grade : ''}</div>` : ''}
           </div>
           <div class="status-icon">${icon}</div>
@@ -85,7 +83,7 @@ async function loadPast() {
       html += `<div class="past-group">
         <div class="past-group-header">
           <h2 class="past-group-title">${escapeHtml(shift.timeLabel)}</h2>
-          <a href="/api/report/${encodeURIComponent(shift.slug)}" target="_blank" class="btn-report-shift" title="Ведомость смены">📋</a>
+          <a href="/api/report/${encodeURIComponent(shift.slug)}" target="_blank" class="btn-report-shift" title="Ведомость смены">📄</a>
         </div>
         <div class="past-group-grid">`;
 
@@ -107,9 +105,7 @@ async function loadPast() {
         html += `
         <div class="timesheet-item ${statusClass}">
           <div class="timesheet-info">
-            <div class="detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 2px;">
-  <path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/>
-</svg> Место ${escapeHtml(wp.workplace)}</div>
+            <div class="detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 2px;"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/></svg>М.${escapeHtml(wp.workplace)}</div>
             ${info}
           </div>
         </div>`;
@@ -150,33 +146,5 @@ function handleSwipe() {
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
-async function initClock() {
-  try {
-    const res = await fetch('/api/server-time');
-    const data = await res.json();
-    const [datePart, timePart] = data.datetime.split(' ');
-    const [day, month, year] = datePart.split('.');
-    const [hours, minutes, seconds] = timePart.split(':');
-    const serverTime = new Date(year, month - 1, day, hours, minutes, seconds);
-    const offset = serverTime.getTime() - Date.now();
-
-    function updateClock() {
-      const now = new Date(Date.now() + offset);
-      const d = String(now.getDate()).padStart(2, '0');
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const y = now.getFullYear();
-      const h = String(now.getHours()).padStart(2, '0');
-      const min = String(now.getMinutes()).padStart(2, '0');
-      const s = String(now.getSeconds()).padStart(2, '0');
-      const el = document.getElementById('server-time');
-      if (el) el.textContent = `${d}.${m}.${y} ${h}:${min}:${s} (${data.tz})`;
-    }
-
-    updateClock();
-    setInterval(updateClock, 1000);
-  } catch (err) {}
-}
-
-initClock();
 loadToday();
 loadPast();

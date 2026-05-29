@@ -9,6 +9,7 @@ const btnBack = document.getElementById('btn-back');
 const footerScore = document.getElementById('footer-score');
 const btnScrollTop = document.getElementById('btn-scroll-top');
 const btnScrollBottom = document.getElementById('btn-scroll-bottom');
+const btnScrollUnfilled = document.getElementById('btn-scroll-unfilled');
 const params = new URLSearchParams(window.location.search);
 const filename = params.get('file');
 
@@ -148,37 +149,6 @@ btnBack.addEventListener('click', async () => {
 
 btnScrollTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 btnScrollBottom.addEventListener('click', () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
-
-function render() { renderMeta(); renderCriteria(); updateFooter(); }
-
-async function initClock() {
-  try {
-    const res = await fetch('/api/server-time');
-    const data = await res.json();
-    const [datePart, timePart] = data.datetime.split(' ');
-    const [day, month, year] = datePart.split('.');
-    const [hours, minutes, seconds] = timePart.split(':');
-    const serverTime = new Date(year, month - 1, day, hours, minutes, seconds);
-    const offset = serverTime.getTime() - Date.now();
-
-    function updateClock() {
-      const now = new Date(Date.now() + offset);
-      const d = String(now.getDate()).padStart(2, '0');
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const y = now.getFullYear();
-      const h = String(now.getHours()).padStart(2, '0');
-      const min = String(now.getMinutes()).padStart(2, '0');
-      const s = String(now.getSeconds()).padStart(2, '0');
-      const el = document.getElementById('server-time');
-      if (el) el.textContent = `${d}.${m}.${y} ${h}:${min}:${s} (${data.tz})`;
-    }
-    updateClock();
-    setInterval(updateClock, 1000);
-  } catch (err) {}
-}
-
-const btnScrollUnfilled = document.getElementById('btn-scroll-unfilled');
-
 btnScrollUnfilled.addEventListener('click', () => {
   const unscored = document.querySelector('.criterion:not(.scored)');
   if (unscored) {
@@ -186,5 +156,6 @@ btnScrollUnfilled.addEventListener('click', () => {
   }
 });
 
-initClock();
+function render() { renderMeta(); renderCriteria(); updateFooter(); }
+
 loadData();
