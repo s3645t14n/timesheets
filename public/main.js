@@ -46,7 +46,7 @@ async function loadToday() {
         <div class="timesheet-item ${statusClass}">
           <div class="timesheet-info">
             <div class="detail">М.${escapeHtml(wp.workplace)}</div>
-            ${wp.exists ? `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}</div>` : ''}
+            ${wp.exists ? `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}${wp.timesheet.percent != null ? ' (' + wp.timesheet.percent + '%)' : ''}${wp.timesheet.grade != null ? ' · ' + wp.timesheet.grade : ''}</div>` : ''}
           </div>
           ${button}
         </div>`;
@@ -102,13 +102,13 @@ async function loadPast() {
 
         if (wp.exists && wp.timesheet && wp.timesheet.complete) {
           statusClass = 'status-past-complete';
-          info = `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}</div>`;
+          info = `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}${wp.timesheet.percent != null ? ' (' + wp.timesheet.percent + '%)' : ''}${wp.timesheet.grade != null ? ' · ' + wp.timesheet.grade : ''}</div>`;
         } else if (wp.exists && wp.timesheet && !wp.timesheet.complete) {
           statusClass = 'status-past-incomplete';
           info = `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · —</div>`;
         } else if (wp.exists) {
           statusClass = 'status-past-complete';
-          info = `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}</div>`;
+          info = `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}${wp.timesheet.percent != null ? ' (' + wp.timesheet.percent + '%)' : ''}${wp.timesheet.grade != null ? ' · ' + wp.timesheet.grade : ''}</div>`;
         }
 
         html += `
