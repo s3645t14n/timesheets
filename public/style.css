@@ -113,7 +113,7 @@ body {
   padding-top: 96px;
   padding-bottom: 80px;
 }
-.container-narrow { max-width: 480px; }
+.container-narrow { max-width: 480px; padding-bottom: 70px; }
 
 @media (min-width: 600px) { .container { max-width: 620px; } }
 @media (min-width: 960px) { .container { max-width: 960px; } }
@@ -273,24 +273,49 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .empty { text-align: center; color: #999; padding: 40px 0; font-size: 15px; }
 
-.scroll-buttons {
-  position: fixed; bottom: 20px; right: 20px;
-  display: flex; flex-direction: column; gap: 8px; z-index: 200;
+/* Футер редактирования */
+.edit-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #2c3e50;
+  color: #fff;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 150;
+  font-size: 13px;
+  gap: 8px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
 }
-.scroll-buttons button {
-  width: 48px; height: 48px; border-radius: 50%; border: none;
-  background: #2c3e50; color: #fff; font-size: 22px; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  display: flex; align-items: center; justify-content: center;
-}
-.scroll-buttons button:active { background: #1a252f; }
 
-.total-score-widget {
-  position: fixed; top: 96px; right: 12px;
-  background: #2c3e50; color: #fff; padding: 6px 10px;
-  border-radius: 16px; font-size: 13px; font-weight: bold;
-  z-index: 150; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+#footer-score {
+  white-space: nowrap;
+  font-weight: bold;
 }
+
+.footer-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.footer-buttons button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.footer-buttons #btn-save { background: #2ecc71; color: #fff; }
+.footer-buttons #btn-save:active { background: #27ae60; }
+.footer-buttons #btn-cancel { background: #95a5a6; color: #fff; }
+.footer-buttons #btn-cancel:active { background: #7f8c8d; }
 
 .page-desc { font-size: 13px; color: #888; margin-bottom: 16px; text-align: center; }
 

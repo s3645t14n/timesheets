@@ -284,6 +284,7 @@ async function apiRouter(req, res) {
       existing.scores = body.scores;
       if (body.totalScore != null) existing.totalScore = body.totalScore;
       if (body.percent != null) existing.percent = body.percent;
+      if (body.grade != null) existing.grade = body.grade;
       fs.writeFileSync(filePath, JSON.stringify(existing, null, 2));
       return sendJSON(res, { ok: true });
     } catch (err) {
