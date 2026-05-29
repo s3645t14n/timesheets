@@ -19,11 +19,11 @@ async function getConfig() {
   return await res.json();
 }
 
-async function createTimesheet(inspector, workplace) {
+async function createTimesheet(inspector, workplace, shift) {
   const res = await fetch(`${BASE_URL}/api/timesheets`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ inspector, workplace })
+    body: JSON.stringify({ inspector, workplace, shift })
   });
   if (!res.ok) {
     const err = await res.json();
@@ -32,11 +32,11 @@ async function createTimesheet(inspector, workplace) {
   return await res.json();
 }
 
-async function saveScores(filename, scores, totalScore, percent) {
+async function saveScores(filename, scores, totalScore, percent, grade) {
   await fetch(`${BASE_URL}/api/timesheets/${filename}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scores, totalScore, percent })
+    body: JSON.stringify({ scores, totalScore, percent, grade })
   });
 }
 
@@ -46,6 +46,14 @@ function randomItem(arr) {
 
 function randomScore() {
   return Math.floor(Math.random() * 3);
+}
+
+function getGrade(percent, gradeScale) {
+  if (!gradeScale || percent <= 0) return '—';
+  for (const g of gradeScale) {
+    if (percent >= g.min && percent <= g.max) return g.grade;
+  }
+  return '—';
 }
 
 async function main() {
@@ -62,10 +70,11 @@ async function main() {
   const createAndFill = async () => {
     const inspector = randomItem(inspectors);
     const workplace = String(Math.floor(Math.random() * config.maxWorkplaces) + 1);
+    const shift = Math.random() < 0.5 ? 'I' : 'II';
 
     try {
-      const ts = await createTimesheet(inspector, workplace);
-      console.log(`[${new Date().toLocaleTimeString()}] Создан: место ${workplace} (${inspector})`);
+      const ts = await createTimesheet(inspector, workplace, shift);
+      console.log(`[${new Date().toLocaleTimeString()}] Создан: ${ts.time}, место ${workplace} (${inspector})`);
 
       const scores = {};
       let totalScore = 0;
@@ -77,9 +86,10 @@ async function main() {
 
       const maxTotal = config.maxTotalScore || 75;
       const percent = maxTotal > 0 ? parseFloat(((totalScore / maxTotal) * 100).toFixed(1)) : 0;
+      const grade = getGrade(percent, config.gradeScale);
 
-      await saveScores(ts.filename, scores, totalScore, percent);
-      console.log(`[${new Date().toLocaleTimeString()}] Заполнен: ${ts.filename}, итог: ${totalScore.toFixed(1)} (${percent}%)`);
+      await saveScores(ts.filename, scores, totalScore, percent, grade);
+      console.log(`[${new Date().toLocaleTimeString()}] Заполнен: ${ts.filename}, итог: ${totalScore.toFixed(1)} (${percent}%) Оценка: ${grade}`);
       count++;
       console.log(`  Всего создано: ${count}\n`);
     } catch (err) {
