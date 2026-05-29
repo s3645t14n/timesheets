@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { loadConfig, reloadConfig } = require('../config');
 const { logAction, LOG_FILE } = require('../logger');
-const { escapeHtml, getCurrentDateSlug, makeTimeLabel, makeFilename, getTimesheetPath, getActiveTimesheets, findDuplicate, getAllTimesheets, getTodayTimesheets, getPastShifts, getPastShiftDetail, getServerTime, DATA_DIR } = require('../timesheets');
+const { escapeHtml, getCurrentDateSlug, makeTimeLabel, makeFilename, getTimesheetPath, getActiveTimesheets, findDuplicate, getAllTimesheets, getTodayTimesheets, getPastShifts, getServerTime, DATA_DIR } = require('../timesheets');
 
 function parseBody(req) {
   return new Promise((resolve) => {
@@ -19,138 +19,16 @@ function sendJSON(res, data, code = 200) {
   res.end(JSON.stringify(data));
 }
 
-function generateReport() {
+function generateReportHTML(timeLabel, items, workplaces) {
   const config = loadConfig();
-  const allTimesheets = getActiveTimesheets();
-  const timesheets = allTimesheets.filter(ts => ts.complete);
-  timesheets.sort((a, b) => parseInt(a.workplace) - parseInt(b.workplace));
-
   const now = new Date();
   const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
   const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-  const grouped = {};
-  for (const ts of timesheets) {
-    if (!grouped[ts.time]) grouped[ts.time] = [];
-    grouped[ts.time].push(ts);
-  }
+  let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Ведомость</title><link rel="stylesheet" href="/print.css"></head><body><h1>${escapeHtml(timeLabel)}</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>`;
 
-  const workplaces = [...new Set(timesheets.map(ts => ts.workplace))];
-
-  let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Сводный отчёт</title><link rel="stylesheet" href="/print.css"></head><body><h1>Сводный отчёт по табелям</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>`;
-
-  for (const time of Object.keys(grouped).sort()) {
-    const items = grouped[time];
-    if (items.length === 0) continue;
-
-    html += `<h2>${escapeHtml(time)}</h2><table><thead><tr><th>№</th><th>Код</th><th>Критерий / оцениваемые действия</th><th>Вес</th><th>Макс. балл</th>`;
-
-    for (const wp of workplaces) {
-      const item = items.find(ts => ts.workplace === wp);
-      const label = item ? `М.${escapeHtml(wp)} (${escapeHtml(item.inspector)})` : `М.${escapeHtml(wp)}`;
-      html += `<th>${label}</th>`;
-    }
-
-    html += `</tr></thead><tbody>`;
-
-    for (let i = 0; i < config.criteria.length; i++) {
-      const crit = config.criteria[i];
-      html += `<tr><td>${i + 1}</td><td>${escapeHtml(crit.id)}</td><td>${escapeHtml(crit.description)}</td><td>${(crit.maxScore / 2).toFixed(1)}</td><td>${crit.maxScore}</td>`;
-      for (const wp of workplaces) {
-        const item = items.find(ts => ts.workplace === wp);
-        html += `<td>${item && item.scores[crit.id] != null ? item.scores[crit.id] : '-'}</td>`;
-      }
-      html += `</tr>`;
-    }
-
-    html += `<tr class="total-row"><td colspan="3"><strong>ИТОГО</strong></td><td></td><td><strong>${config.maxTotalScore}</strong></td>`;
-    for (const wp of workplaces) {
-      const item = items.find(ts => ts.workplace === wp);
-      html += `<td><strong>${item && item.totalScore != null ? item.totalScore.toFixed(1) : '—'}</strong></td>`;
-    }
-    html += `</tr>`;
-    html += `<tr class="total-row"><td colspan="5">% от максимума</td>`;
-    for (const wp of workplaces) {
-      const item = items.find(ts => ts.workplace === wp);
-      html += `<td>${item && item.percent != null ? item.percent + '%' : '—'}</td>`;
-    }
-    html += `</tr>`;
-    html += `<tr class="total-row"><td colspan="5">ОЦЕНКА (5=90–100%, 4=65–89%, 3=50–64%, 2=0–49%)</td>`;
-    for (const wp of workplaces) {
-      const item = items.find(ts => ts.workplace === wp);
-      let grade = '—';
-      if (item && item.percent != null) {
-        if (item.percent >= 90) grade = '5';
-        else if (item.percent >= 65) grade = '4';
-        else if (item.percent >= 50) grade = '3';
-        else grade = '2';
-      }
-      html += `<td><strong>${grade}</strong></td>`;
-    }
-    html += `</tr></tbody></table>`;
-  }
-
-  html += `</body></html>`;
-  return html;
-}
-
-function generateLog() {
-  const now = new Date();
-  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-  const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-  let logEntries = [];
-  try { logEntries = JSON.parse(fs.readFileSync(LOG_FILE, 'utf-8')); } catch { logEntries = []; }
-
-  function formatDT(iso) {
-    const d = new Date(iso);
-    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
-  }
-
-  function makeLinks(text) {
-    return text.replace(/\/api\/timesheets\/[^\s,]+/g, m => `<a href="${m}" target="_blank">${m}</a>`);
-  }
-
-  let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Лог операций</title><link rel="stylesheet" href="/print.css"></head><body><h1>Лог операций</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz}) | <a href="/api/config" target="_blank">Показать активный конфиг</a></p><table><thead><tr><th>Дата и время</th><th>Операция</th><th>Подробности</th></tr></thead><tbody>`;
-
-  for (const entry of logEntries) {
-    html += `<tr><td>${formatDT(entry.datetime)}</td><td>${escapeHtml(entry.action)}</td><td>${makeLinks(escapeHtml(entry.details || '-'))}</td></tr>`;
-  }
-
-  html += `</tbody></table></body></html>`;
-  return html;
-}
-
-function generateShiftReport(slug) {
-  const config = loadConfig();
-  const allTimesheets = getActiveTimesheets();
-  const [year, month, day, shiftSlug] = slug.split('_');
-  const dateSlug = `${year}_${month}_${day}`;
-
-  const shiftLabel = shiftSlug === 'I' ? '1 смена' : '2 смена';
-  const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-  const timeLabel = `${parseInt(day)} ${monthNames[parseInt(month) - 1]} ${shiftLabel}`;
-
-  const items = [];
-  for (let w = 1; w <= config.maxWorkplaces; w++) {
-    const filename = `${dateSlug}_${shiftSlug}_${w}.json`;
-    const ts = allTimesheets.find(t => t.filename === filename);
-    if (ts && ts.complete) items.push(ts);
-  }
-  items.sort((a, b) => parseInt(a.workplace) - parseInt(b.workplace));
-
-  const now = new Date();
-  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-  const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-  const workplaces = [...new Set(items.map(ts => ts.workplace))];
-
-  let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Ведомость смены</title><link rel="stylesheet" href="/print.css"><style>body{overflow-x:auto;}table{min-width:600px;}</style></head><body><h1>Ведомость: ${escapeHtml(timeLabel)}</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>`;
-
-  html += `<table><thead><tr><th>№</th><th>Код</th><th>Критерий</th><th>Вес</th><th>Макс. балл</th>`;
+  html += `<table><thead><tr><th>№</th><th>Код</th><th>Критерий / оцениваемые действия</th><th>Вес</th><th>Макс. балл</th>`;
   for (const wp of workplaces) {
     const item = items.find(ts => ts.workplace === wp);
     const label = item ? `М.${escapeHtml(wp)} (${escapeHtml(item.inspector)})` : `М.${escapeHtml(wp)}`;
@@ -180,7 +58,7 @@ function generateShiftReport(slug) {
     html += `<td>${item && item.percent != null ? item.percent + '%' : '—'}</td>`;
   }
   html += `</tr>`;
-  html += `<tr class="total-row"><td colspan="5">ОЦЕНКА</td>`;
+  html += `<tr class="total-row"><td colspan="5">ОЦЕНКА (5=90–100%, 4=65–89%, 3=50–64%, 2=0–49%)</td>`;
   for (const wp of workplaces) {
     const item = items.find(ts => ts.workplace === wp);
     let grade = '—';
@@ -194,6 +72,46 @@ function generateShiftReport(slug) {
   }
   html += `</tr></tbody></table></body></html>`;
   return html;
+}
+
+function generateLogHTML() {
+  const now = new Date();
+  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  let logEntries = [];
+  try { logEntries = JSON.parse(fs.readFileSync(LOG_FILE, 'utf-8')); } catch { logEntries = []; }
+
+  function formatDT(iso) {
+    const d = new Date(iso);
+    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+  }
+
+  function makeLinks(text) {
+    return text.replace(/\/api\/timesheets\/[^\s,]+/g, m => `<a href="${m}" target="_blank">${m}</a>`);
+  }
+
+  let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Лог операций</title><link rel="stylesheet" href="/print.css"></head><body><h1>Лог операций</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz}) | <a href="/api/config" target="_blank">Показать активный конфиг</a></p><table><thead><tr><th>Дата и время</th><th>Операция</th><th>Подробности</th></tr></thead><tbody>`;
+  for (const entry of logEntries) {
+    html += `<tr><td>${formatDT(entry.datetime)}</td><td>${escapeHtml(entry.action)}</td><td>${makeLinks(escapeHtml(entry.details || '-'))}</td></tr>`;
+  }
+  html += `</tbody></table></body></html>`;
+  return html;
+}
+
+function getReportData(timeLabel, items, workplaces) {
+  const config = loadConfig();
+  const columns = ['Критерий', ...workplaces.map(w => `М.${w}`)];
+  const rows = config.criteria.map(crit => {
+    const row = [crit.id];
+    for (const wp of workplaces) {
+      const item = items.find(ts => ts.workplace === wp);
+      row.push(item && item.scores[crit.id] != null ? item.scores[crit.id] : '');
+    }
+    return row;
+  });
+  return { title: timeLabel, columns, rows };
 }
 
 async function apiRouter(req, res) {
@@ -217,11 +135,6 @@ async function apiRouter(req, res) {
 
   if (url === '/api/timesheets/past' && method === 'GET') {
     return sendJSON(res, getPastShifts());
-  }
-
-  if (url.startsWith('/api/timesheets/past/') && method === 'GET') {
-    const slug = url.replace('/api/timesheets/past/', '').split('?')[0];
-    return sendJSON(res, getPastShiftDetail(slug));
   }
 
   if (url === '/api/timesheets/all' && method === 'GET') {
@@ -335,21 +248,99 @@ async function apiRouter(req, res) {
     return sendJSON(res, { ok: true, config: reloadConfig() });
   }
 
-  if (url === '/api/report' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    return res.end(generateReport());
+  // --- ведомость: данные JSON для DataTables ---
+  if (url.startsWith('/api/report/') && url.endsWith('/data') && method === 'GET') {
+    const slug = url.replace('/api/report/', '').replace('/data', '').split('?')[0];
+    const [year, month, day, shiftSlug] = slug.split('_');
+    const dateSlug = `${year}_${month}_${day}`;
+    const config = loadConfig();
+    const allTimesheets = getActiveTimesheets();
+
+    const shiftLabel = shiftSlug === 'I' ? '1 смена' : '2 смена';
+    const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    const timeLabel = `${parseInt(day)} ${monthNames[parseInt(month) - 1]} ${shiftLabel}`;
+
+    const items = [];
+    const workplaces = [];
+    for (let w = 1; w <= config.maxWorkplaces; w++) {
+      const filename = `${dateSlug}_${shiftSlug}_${w}.json`;
+      const ts = allTimesheets.find(t => t.filename === filename);
+      if (ts && ts.complete) {
+        items.push(ts);
+        workplaces.push(String(w));
+      }
+    }
+
+    return sendJSON(res, getReportData(timeLabel, items, workplaces));
   }
 
+  // --- ведомость: HTML для печати (общая или сменная) ---
   if (url.startsWith('/api/report/') && method === 'GET') {
     const slug = url.replace('/api/report/', '').split('?')[0];
-    const html = generateShiftReport(slug);
+    const [year, month, day, shiftSlug] = slug.split('_');
+    const dateSlug = `${year}_${month}_${day}`;
+    const config = loadConfig();
+    const allTimesheets = getActiveTimesheets();
+
+    const shiftLabel = shiftSlug === 'I' ? '1 смена' : '2 смена';
+    const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    const timeLabel = `${parseInt(day)} ${monthNames[parseInt(month) - 1]} ${shiftLabel}`;
+
+    const items = [];
+    const workplaces = [];
+    for (let w = 1; w <= config.maxWorkplaces; w++) {
+      const filename = `${dateSlug}_${shiftSlug}_${w}.json`;
+      const ts = allTimesheets.find(t => t.filename === filename);
+      if (ts && ts.complete) {
+        items.push(ts);
+        workplaces.push(String(w));
+      }
+    }
+
+    const html = generateReportHTML(timeLabel, items, workplaces);
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(html);
   }
 
-  if (url === '/api/log' && method === 'GET') {
+  // --- сводный отчёт (все смены) ---
+  if (url === '/api/report' && method === 'GET') {
+    const config = loadConfig();
+    const allTimesheets = getActiveTimesheets();
+    const timesheets = allTimesheets.filter(ts => ts.complete);
+    timesheets.sort((a, b) => parseInt(a.workplace) - parseInt(b.workplace));
+
+    const grouped = {};
+    for (const ts of timesheets) {
+      if (!grouped[ts.time]) grouped[ts.time] = [];
+      grouped[ts.time].push(ts);
+    }
+
+    let html = '';
+    for (const time of Object.keys(grouped).sort()) {
+      const items = grouped[time];
+      const workplaces = [...new Set(items.map(ts => ts.workplace))];
+      html += generateReportHTML(time, items, workplaces);
+    }
+
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    return res.end(generateLog());
+    return res.end(html);
+  }
+
+  // --- общая ведомость: данные JSON для DataTables ---
+  if (url === '/api/report/data' && method === 'GET') {
+    const config = loadConfig();
+    const allTimesheets = getActiveTimesheets();
+    const timesheets = allTimesheets.filter(ts => ts.complete);
+    timesheets.sort((a, b) => parseInt(a.workplace) - parseInt(b.workplace));
+
+    const workplaces = [...new Set(timesheets.map(ts => ts.workplace))];
+    return sendJSON(res, getReportData('Сводная ведомость', timesheets, workplaces));
+  }
+
+  if (url === '/api/log' && method === 'GET') {
+    const html = generateLogHTML();
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    return res.end(html);
   }
 
   res.writeHead(404);
