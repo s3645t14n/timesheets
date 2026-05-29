@@ -3,117 +3,132 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-const listEl = document.getElementById('timesheets-list');
+const todayEl = document.getElementById('today-timesheets');
+const pastEl = document.getElementById('past-shifts-list');
 const btnScrollTop = document.getElementById('btn-scroll-top');
 const btnScrollBottom = document.getElementById('btn-scroll-bottom');
 
-function formatDate(isoString) {
-  const d = new Date(isoString);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${day}.${month}.${year} ${hours}:${minutes}`;
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+async function loadToday() {
+  try {
+    const res = await fetch('/api/timesheets/today');
+    const groups = await res.json();
+
+    let html = '';
+
+    for (const group of groups) {
+      const reportUrl = `/api/report/${escapeHtml(group.dateSlug)}_${escapeHtml(group.shiftSlug)}`;
+
+      html += `<div class="group-header">
+        <h2 class="group-heading">${escapeHtml(group.timeLabel)}</h2>
+        <a href="${reportUrl}" target="_blank" class="btn-report-shift" title="Ведомость смены">📋</a>
+      </div>`;
+
+      html += group.workplaces.map(wp => {
+        let statusClass = 'status-missing';
+        let button = `<button class="btn-create-ts" data-workplace="${escapeHtml(wp.workplace)}" data-shift="${escapeHtml(group.shiftSlug)}">Создать</button>`;
+
+        if (wp.exists && wp.complete) {
+          statusClass = 'status-complete';
+          button = `<button class="btn-edit" data-filename="${escapeHtml(wp.filename)}">Изменить</button>`;
+        } else if (wp.exists && !wp.complete) {
+          statusClass = 'status-incomplete';
+          button = `<button class="btn-continue" data-filename="${escapeHtml(wp.filename)}">Продолжить</button>`;
+        }
+
+        return `
+        <div class="timesheet-item ${statusClass}">
+          <div class="timesheet-info">
+            <div class="detail">М.${escapeHtml(wp.workplace)}</div>
+            ${wp.exists ? `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}</div>` : ''}
+          </div>
+          ${button}
+        </div>`;
+      }).join('');
+    }
+
+    todayEl.innerHTML = html;
+
+    todayEl.querySelectorAll('.btn-create-ts').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wp = btn.dataset.workplace;
+        const shift = btn.dataset.shift;
+        window.location.href = `/create.html?workplace=${encodeURIComponent(wp)}&shift=${encodeURIComponent(shift)}`;
+      });
+    });
+
+    todayEl.querySelectorAll('.btn-continue, .btn-edit').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.location.href = '/edit.html?file=' + encodeURIComponent(btn.dataset.filename);
+      });
+    });
+
+  } catch (err) {
+    todayEl.innerHTML = '<div class="empty">Ошибка загрузки</div>';
+  }
 }
 
-async function loadMatrix() {
+async function loadPast() {
   try {
-    const res = await fetch('/api/timesheets/matrix');
-    const matrix = await res.json();
+    const res = await fetch('/api/timesheets/past');
+    const shifts = await res.json();
 
-    if (matrix.length === 0) {
-      listEl.innerHTML = '<div class="empty">Нет доступных смен</div>';
+    if (shifts.length === 0) {
+      pastEl.innerHTML = '<div class="empty">Нет прошедших смен</div>';
       return;
     }
 
     let html = '';
 
-    for (const group of matrix) {
-      const pastClass = group.past ? ' past-group' : '';
+    for (const shift of shifts) {
+      html += `<div class="past-group">
+        <div class="past-group-header">
+          <h2 class="past-group-title">${escapeHtml(shift.timeLabel)}</h2>
+          <a href="/api/report/${encodeURIComponent(shift.slug)}" target="_blank" class="btn-report-shift" title="Ведомость смены">📋</a>
+        </div>
+        <div class="past-group-grid">`;
 
-            html += `<h2 class="group-heading${pastClass}">${escapeHtml(group.timeLabel)}${group.past ? ' <span class="closed-badge">(закрыта)</span>' : ''}</h2>`;
+      for (const wp of shift.workplaces) {
+        let statusClass = 'status-past-missing';
+        let info = '';
 
-      for (const wp of group.workplaces) {
-        let statusClass = 'status-missing';
-        let badge = '';
-        let button = '';
-
-        if (group.past) {
-          if (wp.exists && wp.complete) {
-            statusClass = 'status-past-complete';
-            badge = `<div class="status-badge">✓</div>`;
-          } else if (wp.exists && !wp.complete) {
-            statusClass = 'status-past-incomplete';
-            badge = `<div class="status-badge">✗</div>`;
-          } else {
-            statusClass = 'status-past-missing';
-            badge = `<div class="status-badge">—</div>`;
-          }
-        } else {
-          if (wp.exists && wp.complete) {
-            statusClass = 'status-complete';
-            badge = `<div class="status-badge">✓</div>`;
-            button = `<button class="btn-edit" data-filename="${escapeHtml(wp.filename)}">Изменить</button>`;
-          } else if (wp.exists && !wp.complete) {
-            statusClass = 'status-incomplete';
-            badge = `<div class="status-badge">⚠</div>`;
-            button = `<button class="btn-continue" data-filename="${escapeHtml(wp.filename)}">Продолжить</button>`;
-          } else {
-            statusClass = 'status-missing';
-            badge = `<div class="status-badge">+</div>`;
-            button = `<button class="btn-create-ts" data-workplace="${escapeHtml(wp.workplace)}">Создать</button>`;
-          }
+        if (wp.exists && wp.timesheet && wp.timesheet.complete) {
+          statusClass = 'status-past-complete';
+          info = `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}</div>`;
+        } else if (wp.exists && wp.timesheet && !wp.timesheet.complete) {
+          statusClass = 'status-past-incomplete';
+          info = `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · —</div>`;
+        } else if (wp.exists) {
+          statusClass = 'status-past-complete';
+          info = `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}</div>`;
         }
 
         html += `
-        <div class="timesheet-item ${statusClass}" data-filename="${escapeHtml(wp.filename)}" data-workplace="${escapeHtml(wp.workplace)}">
+        <div class="timesheet-item ${statusClass}">
           <div class="timesheet-info">
-            <div class="detail">Место ${escapeHtml(wp.workplace)}</div>
-            ${wp.exists ? `
-              <div class="dates">
-                <div>${escapeHtml(wp.timesheet.inspector)}</div>
-                <div>Итог: ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}${wp.timesheet.percent != null ? ' (' + wp.timesheet.percent + '%)' : ''}</div>
-              </div>
-            ` : '<div class="dates"><div>Табель не создан</div></div>'}
+            <div class="detail">М.${escapeHtml(wp.workplace)}</div>
+            ${info}
           </div>
-          ${badge}
-          ${button}
         </div>`;
       }
+
+      html += `</div></div>`;
     }
 
-    listEl.innerHTML = html;
-
-    // Кнопка "Создать"
-    listEl.querySelectorAll('.btn-create-ts').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const wp = btn.dataset.workplace;
-        window.location.href = `/create.html?workplace=${encodeURIComponent(wp)}`;
-      });
-    });
-
-    // Кнопка "Продолжить"
-    listEl.querySelectorAll('.btn-continue').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const fn = btn.dataset.filename;
-        window.location.href = `/edit.html?file=${encodeURIComponent(fn)}`;
-      });
-    });
-
-    // Кнопка "Изменить"
-    listEl.querySelectorAll('.btn-edit').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const fn = btn.dataset.filename;
-        window.location.href = `/edit.html?file=${encodeURIComponent(fn)}`;
-      });
-    });
+    pastEl.innerHTML = html;
 
   } catch (err) {
-    listEl.innerHTML = '<div class="empty">Ошибка загрузки.</div>';
+    pastEl.innerHTML = '<div class="empty">Ошибка загрузки</div>';
   }
 }
 
@@ -122,43 +137,14 @@ btnScrollBottom.addEventListener('click', () => window.scrollTo({ top: document.
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
-async function loadUpcoming() {
-  const noticesEl = document.getElementById('upcoming-notices');
-  try {
-    const res = await fetch('/api/timesheets/upcoming');
-    const upcoming = await res.json();
-
-    if (upcoming.length === 0) {
-      noticesEl.innerHTML = '';
-      return;
-    }
-
-    noticesEl.innerHTML = upcoming.map(item => `
-      <div class="notice-item">
-        <span class="notice-icon">📅</span>
-        <span class="notice-text">${escapeHtml(item.label)}</span>
-        <span class="notice-time">с 00:00</span>
-      </div>
-    `).join('');
-  } catch (err) {
-    noticesEl.innerHTML = '';
-  }
-}
-
-// Часы (синхронизируются с сервером)
 async function initClock() {
   try {
     const res = await fetch('/api/server-time');
     const data = await res.json();
-
-    const serverTime = new Date();
-    // Парсим дату от сервера, чтобы узнать смещение
     const [datePart, timePart] = data.datetime.split(' ');
     const [day, month, year] = datePart.split('.');
     const [hours, minutes, seconds] = timePart.split(':');
-    serverTime.setFullYear(year, month - 1, day);
-    serverTime.setHours(hours, minutes, seconds, 0);
-
+    const serverTime = new Date(year, month - 1, day, hours, minutes, seconds);
     const offset = serverTime.getTime() - Date.now();
 
     function updateClock() {
@@ -170,19 +156,14 @@ async function initClock() {
       const min = String(now.getMinutes()).padStart(2, '0');
       const s = String(now.getSeconds()).padStart(2, '0');
       const el = document.getElementById('server-time');
-      if (el) {
-        el.textContent = `${d}.${m}.${y} ${h}:${min}:${s} (${data.tz})`;
-      }
+      if (el) el.textContent = `${d}.${m}.${y} ${h}:${min}:${s} (${data.tz})`;
     }
 
     updateClock();
     setInterval(updateClock, 1000);
-  } catch (err) {
-    // fallback на локальное время
-  }
+  } catch (err) {}
 }
 
 initClock();
-
-loadMatrix();
-loadUpcoming();
+loadToday();
+loadPast();

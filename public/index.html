@@ -9,9 +9,18 @@
 <body>
   <!--HEADER-->
 
+  <nav class="tab-bar">
+    <button class="tab active" data-tab="today">Табели сегодня</button>
+    <button class="tab" data-tab="past">Прошлые смены</button>
+  </nav>
+
   <main class="container">
-    <div id="upcoming-notices"></div>
-    <div id="timesheets-list" class="timesheets-grid"></div>
+    <div id="tab-today" class="tab-content active">
+      <div id="today-timesheets"></div>
+    </div>
+    <div id="tab-past" class="tab-content">
+      <div id="past-shifts-list"></div>
+    </div>
   </main>
 
   <div class="scroll-buttons">

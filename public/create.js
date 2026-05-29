@@ -5,6 +5,7 @@ const form = document.getElementById('create-form');
 
 const params = new URLSearchParams(window.location.search);
 const workplace = params.get('workplace');
+const shift = params.get('shift') || 'I';
 
 if (!workplace) {
   alert('Не указано рабочее место');
@@ -34,7 +35,7 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/api/timesheets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inspector, workplace })
+      body: JSON.stringify({ inspector, workplace, shift })
     });
 
     if (!res.ok) {
@@ -49,3 +50,32 @@ form.addEventListener('submit', async (e) => {
     alert('Ошибка создания табеля.');
   }
 });
+
+async function initClock() {
+  try {
+    const res = await fetch('/api/server-time');
+    const data = await res.json();
+    const [datePart, timePart] = data.datetime.split(' ');
+    const [day, month, year] = datePart.split('.');
+    const [hours, minutes, seconds] = timePart.split(':');
+    const serverTime = new Date(year, month - 1, day, hours, minutes, seconds);
+    const offset = serverTime.getTime() - Date.now();
+
+    function updateClock() {
+      const now = new Date(Date.now() + offset);
+      const d = String(now.getDate()).padStart(2, '0');
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const y = now.getFullYear();
+      const h = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      const el = document.getElementById('server-time');
+      if (el) el.textContent = `${d}.${m}.${y} ${h}:${min}:${s} (${data.tz})`;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  } catch (err) {}
+}
+
+initClock();

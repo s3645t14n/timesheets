@@ -20,20 +20,24 @@ function makeSlug(str) {
   return result.replace(/^_|_$/g, '');
 }
 
-function getCurrentCheckTime() {
+function getCurrentDateSlug() {
   const now = new Date();
   const day = String(now.getDate()).padStart(2, '0');
   const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-  const shift = now.getHours() < 18 ? '1 смена' : '2 смена';
   return {
-    time: `${day} ${months[now.getMonth()]} ${shift}`,
-    dateSlug: `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}_${day}`,
-    shiftSlug: now.getHours() < 18 ? 'I' : 'II'
+    dateDisplay: `${day} ${months[now.getMonth()]}`,
+    dateSlug: `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}_${day}`
   };
 }
 
-function makeFilename(workplace) {
-  const { dateSlug, shiftSlug } = getCurrentCheckTime();
+function makeTimeLabel(shiftSlug) {
+  const { dateDisplay } = getCurrentDateSlug();
+  const shiftLabel = shiftSlug === 'II' ? '2 смена' : '1 смена';
+  return `${dateDisplay} ${shiftLabel}`;
+}
+
+function makeFilename(workplace, shiftSlug) {
+  const { dateSlug } = getCurrentDateSlug();
   return `${dateSlug}_${shiftSlug}_${makeSlug(workplace)}.json`;
 }
 
@@ -102,12 +106,10 @@ function getAllTimesheets() {
   return result;
 }
 
-function getTimesheetMatrix() {
+function getTodayTimesheets() {
   const config = loadConfig();
-  const activeTimesheets = getActiveTimesheets();
-
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const allActive = getActiveTimesheets();
+  const { dateSlug, dateDisplay } = getCurrentDateSlug();
 
   const shifts = [
     { slug: 'II', label: '2 смена' },
@@ -116,76 +118,127 @@ function getTimesheetMatrix() {
 
   const result = [];
 
-  for (const dateStr of config.examDates) {
-    if (dateStr > todayStr) continue;
+  for (const shift of shifts) {
+    const timeLabel = `${dateDisplay} ${shift.label}`;
+    const workplaces = [];
 
-    const isPast = dateStr < todayStr;
-    const [year, month, day] = dateStr.split('-');
-    const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-    const dateDisplay = `${parseInt(day)} ${monthNames[parseInt(month) - 1]}`;
+    for (let w = 1; w <= config.maxWorkplaces; w++) {
+      const filename = `${dateSlug}_${shift.slug}_${w}.json`;
+      const existing = allActive.find(ts => ts.filename === filename);
 
-    for (const shift of shifts) {
-      const timeLabel = `${dateDisplay} ${shift.label}`;
-      const dateSlug = `${year}_${month}_${day}`;
-      const workplaces = [];
-
-      for (let w = 1; w <= config.maxWorkplaces; w++) {
-        const filename = `${dateSlug}_${shift.slug}_${w}.json`;
-        const existing = activeTimesheets.find(ts => ts.filename === filename);
-
-        workplaces.push({
-          workplace: String(w),
-          timesheet: existing || null,
-          exists: !!existing,
-          complete: existing ? existing.complete : false,
-          filename: filename,
-          past: isPast
-        });
-      }
-
-      result.push({
-        date: dateStr,
-        dateDisplay: dateDisplay,
-        shift: shift.label,
-        shiftSlug: shift.slug,
-        timeLabel: timeLabel,
-        past: isPast,
-        workplaces: workplaces
+      workplaces.push({
+        workplace: String(w),
+        timesheet: existing || null,
+        exists: !!existing,
+        complete: existing ? existing.complete : false,
+        filename: filename
       });
     }
+
+    result.push({
+      shift: shift.label,
+      shiftSlug: shift.slug,
+      timeLabel: timeLabel,
+      workplaces: workplaces
+    });
   }
 
   return result;
 }
 
-function getUpcomingShifts() {
+function getPastShifts() {
   const config = loadConfig();
+  const allTimesheets = getAllTimesheets();
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  const shifts = [
-    { slug: 'II', label: '2 смена' },
-    { slug: 'I', label: '1 смена' }
-  ];
+  const pastMap = {};
 
-  const result = [];
+  for (const ts of allTimesheets) {
+    const match = ts.filename.match(/^(\d{4}_\d{2}_\d{2})_(I|II)_/);
+    if (!match) continue;
 
-  for (const dateStr of config.examDates) {
-    if (dateStr <= todayStr) continue;
+    const fileDate = match[1].replace(/_/g, '-');
+    if (fileDate >= todayStr) continue;
 
-    const [year, month, day] = dateStr.split('-');
+    const shiftSlug = match[2];
+    const shiftLabel = shiftSlug === 'I' ? '1 смена' : '2 смена';
+
+    const [year, month, day] = fileDate.split('-');
     const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
     const dateDisplay = `${parseInt(day)} ${monthNames[parseInt(month) - 1]}`;
+    const key = `${fileDate}_${shiftSlug}`;
+    const dateSlug = `${year}_${month}_${day}`;
 
-    for (const shift of shifts) {
-      result.push({
-        date: dateStr,
-        label: `${dateDisplay}, ${shift.label}`
+    if (!pastMap[key]) {
+      pastMap[key] = {
+        date: fileDate,
+        shift: shiftLabel,
+        shiftSlug: shiftSlug,
+        timeLabel: `${dateDisplay} ${shiftLabel}`,
+        slug: `${dateSlug}_${shiftSlug}`,
+        dateSlug: dateSlug,
+        workplaces: []
+      };
+    }
+
+    const wp = ts.workplace;
+    if (!pastMap[key].workplaces.find(w => w.workplace === wp)) {
+      pastMap[key].workplaces.push({
+        workplace: wp,
+        timesheet: ts,
+        exists: true,
+        complete: ts.complete
       });
     }
   }
 
-  return result;
+  for (const key of Object.keys(pastMap)) {
+    const shift = pastMap[key];
+    for (let w = 1; w <= config.maxWorkplaces; w++) {
+      if (!shift.workplaces.find(wp => wp.workplace === String(w))) {
+        shift.workplaces.push({
+          workplace: String(w),
+          timesheet: null,
+          exists: false,
+          complete: false
+        });
+      }
+    }
+    shift.workplaces.sort((a, b) => parseInt(a.workplace) - parseInt(b.workplace));
+  }
+
+  return Object.values(pastMap).sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function getPastShiftDetail(slug) {
+  const config = loadConfig();
+  const allTimesheets = getAllTimesheets();
+  const [year, month, day, shiftSlug] = slug.split('_');
+  const dateSlug = `${year}_${month}_${day}`;
+
+  const shiftLabel = shiftSlug === 'I' ? '1 смена' : '2 смена';
+  const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  const dateDisplay = `${parseInt(day)} ${monthNames[parseInt(month) - 1]}`;
+
+  const workplaces = [];
+
+  for (let w = 1; w <= config.maxWorkplaces; w++) {
+    const filename = `${dateSlug}_${shiftSlug}_${w}.json`;
+    const existing = allTimesheets.find(ts => ts.filename === filename);
+    const deleted = allTimesheets.find(ts => ts.filename === filename.replace('.json', '_d.json'));
+
+    workplaces.push({
+      workplace: String(w),
+      timesheet: existing || deleted || null,
+      exists: !!(existing || deleted)
+    });
+  }
+
+  return {
+    timeLabel: `${dateDisplay} ${shiftLabel}`,
+    workplaces: workplaces
+  };
 }
 
 function getServerTime() {
@@ -197,10 +250,7 @@ function getServerTime() {
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
   const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-  return {
-    datetime: `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`,
-    tz: tz
-  };
+  return { datetime: `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`, tz: tz };
 }
 
-module.exports = { escapeHtml, makeSlug, getCurrentCheckTime, makeFilename, getTimesheetPath, isComplete, getActiveTimesheets, findDuplicate, getAllTimesheets, getTimesheetMatrix, getUpcomingShifts, getServerTime, DATA_DIR };
+module.exports = { escapeHtml, makeSlug, getCurrentDateSlug, makeTimeLabel, makeFilename, getTimesheetPath, isComplete, getActiveTimesheets, findDuplicate, getAllTimesheets, getTodayTimesheets, getPastShifts, getPastShiftDetail, getServerTime, DATA_DIR };

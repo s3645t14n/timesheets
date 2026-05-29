@@ -2,9 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { loadConfig, reloadConfig } = require('../config');
 const { logAction, LOG_FILE } = require('../logger');
-const { escapeHtml, getCurrentCheckTime, makeFilename, getTimesheetPath, getActiveTimesheets, findDuplicate, getAllTimesheets, getTimesheetMatrix, getUpcomingShifts, getServerTime, DATA_DIR } = require('../timesheets');
+const { escapeHtml, getCurrentDateSlug, makeTimeLabel, makeFilename, getTimesheetPath, getActiveTimesheets, findDuplicate, getAllTimesheets, getTodayTimesheets, getPastShifts, getPastShiftDetail, getServerTime, DATA_DIR } = require('../timesheets');
 
-// Чтение тела запроса как JSON
 function parseBody(req) {
   return new Promise((resolve) => {
     let body = '';
@@ -15,13 +14,11 @@ function parseBody(req) {
   });
 }
 
-// Отправка JSON-ответа
 function sendJSON(res, data, code = 200) {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(data));
 }
 
-// Генерация HTML сводного отчёта
 function generateReport() {
   const config = loadConfig();
   const allTimesheets = getActiveTimesheets();
@@ -67,23 +64,18 @@ function generateReport() {
       html += `</tr>`;
     }
 
-    // ИТОГО
     html += `<tr class="total-row"><td colspan="3"><strong>ИТОГО</strong></td><td></td><td><strong>${config.maxTotalScore}</strong></td>`;
     for (const wp of workplaces) {
       const item = items.find(ts => ts.workplace === wp);
       html += `<td><strong>${item && item.totalScore != null ? item.totalScore.toFixed(1) : '—'}</strong></td>`;
     }
     html += `</tr>`;
-
-    // % от максимума
     html += `<tr class="total-row"><td colspan="5">% от максимума</td>`;
     for (const wp of workplaces) {
       const item = items.find(ts => ts.workplace === wp);
       html += `<td>${item && item.percent != null ? item.percent + '%' : '—'}</td>`;
     }
     html += `</tr>`;
-
-    // ОЦЕНКА
     html += `<tr class="total-row"><td colspan="5">ОЦЕНКА (5=90–100%, 4=65–89%, 3=50–64%, 2=0–49%)</td>`;
     for (const wp of workplaces) {
       const item = items.find(ts => ts.workplace === wp);
@@ -103,7 +95,6 @@ function generateReport() {
   return html;
 }
 
-// Генерация HTML лога операций
 function generateLog() {
   const now = new Date();
   const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
@@ -132,55 +123,128 @@ function generateLog() {
   return html;
 }
 
-// Главный роутер API
+function generateShiftReport(slug) {
+  const config = loadConfig();
+  const allTimesheets = getActiveTimesheets();
+  const [year, month, day, shiftSlug] = slug.split('_');
+  const dateSlug = `${year}_${month}_${day}`;
+
+  const shiftLabel = shiftSlug === 'I' ? '1 смена' : '2 смена';
+  const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  const timeLabel = `${parseInt(day)} ${monthNames[parseInt(month) - 1]} ${shiftLabel}`;
+
+  const items = [];
+  for (let w = 1; w <= config.maxWorkplaces; w++) {
+    const filename = `${dateSlug}_${shiftSlug}_${w}.json`;
+    const ts = allTimesheets.find(t => t.filename === filename);
+    if (ts && ts.complete) items.push(ts);
+  }
+  items.sort((a, b) => parseInt(a.workplace) - parseInt(b.workplace));
+
+  const now = new Date();
+  const tz = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const workplaces = [...new Set(items.map(ts => ts.workplace))];
+
+  let html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Ведомость смены</title><link rel="stylesheet" href="/print.css"><style>body{overflow-x:auto;}table{min-width:600px;}</style></head><body><h1>Ведомость: ${escapeHtml(timeLabel)}</h1><p class="report-date">Сформирован: ${dateStr} в ${timeStr} (${tz})</p>`;
+
+  html += `<table><thead><tr><th>№</th><th>Код</th><th>Критерий</th><th>Вес</th><th>Макс. балл</th>`;
+  for (const wp of workplaces) {
+    const item = items.find(ts => ts.workplace === wp);
+    const label = item ? `М.${escapeHtml(wp)} (${escapeHtml(item.inspector)})` : `М.${escapeHtml(wp)}`;
+    html += `<th>${label}</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  for (let i = 0; i < config.criteria.length; i++) {
+    const crit = config.criteria[i];
+    html += `<tr><td>${i + 1}</td><td>${escapeHtml(crit.id)}</td><td>${escapeHtml(crit.description)}</td><td>${(crit.maxScore / 2).toFixed(1)}</td><td>${crit.maxScore}</td>`;
+    for (const wp of workplaces) {
+      const item = items.find(ts => ts.workplace === wp);
+      html += `<td>${item && item.scores[crit.id] != null ? item.scores[crit.id] : '-'}</td>`;
+    }
+    html += `</tr>`;
+  }
+
+  html += `<tr class="total-row"><td colspan="3"><strong>ИТОГО</strong></td><td></td><td><strong>${config.maxTotalScore}</strong></td>`;
+  for (const wp of workplaces) {
+    const item = items.find(ts => ts.workplace === wp);
+    html += `<td><strong>${item && item.totalScore != null ? item.totalScore.toFixed(1) : '—'}</strong></td>`;
+  }
+  html += `</tr>`;
+  html += `<tr class="total-row"><td colspan="5">% от максимума</td>`;
+  for (const wp of workplaces) {
+    const item = items.find(ts => ts.workplace === wp);
+    html += `<td>${item && item.percent != null ? item.percent + '%' : '—'}</td>`;
+  }
+  html += `</tr>`;
+  html += `<tr class="total-row"><td colspan="5">ОЦЕНКА</td>`;
+  for (const wp of workplaces) {
+    const item = items.find(ts => ts.workplace === wp);
+    let grade = '—';
+    if (item && item.percent != null) {
+      if (item.percent >= 90) grade = '5';
+      else if (item.percent >= 65) grade = '4';
+      else if (item.percent >= 50) grade = '3';
+      else grade = '2';
+    }
+    html += `<td><strong>${grade}</strong></td>`;
+  }
+  html += `</tr></tbody></table></body></html>`;
+  return html;
+}
+
 async function apiRouter(req, res) {
   const url = req.url;
   const method = req.method;
 
-  // --- проверка дубликата ---
   if (url === '/api/timesheets/check-duplicate' && method === 'POST') {
     const body = await parseBody(req);
-    const checkTime = getCurrentCheckTime();
-    const duplicate = findDuplicate(checkTime.time, body.workplace);
+    const shiftSlug = body.shift === 'II' ? 'II' : 'I';
+    const timeLabel = makeTimeLabel(shiftSlug);
+    const duplicate = findDuplicate(timeLabel, body.workplace);
     if (duplicate) {
-      logAction(`Попытка создания дубликата (отклонено): ${checkTime.time}, место ${body.workplace}`, `Существующий табель: /api/timesheets/${duplicate.filename}, проверяющий: ${duplicate.inspector}, заполнен: ${duplicate.complete ? 'да' : 'нет'}`);
+      logAction(`Попытка создания дубликата (отклонено): ${timeLabel}, место ${body.workplace}`, `Существующий табель: /api/timesheets/${duplicate.filename}, проверяющий: ${duplicate.inspector}`);
     }
     return sendJSON(res, { duplicate: !!duplicate, existingFile: duplicate ? duplicate.filename : null, existingInspector: duplicate ? duplicate.inspector : null, existingComplete: duplicate ? duplicate.complete : null });
   }
 
-  // --- матрица табелей ---
-  if (url === '/api/timesheets/matrix' && method === 'GET') {
-    return sendJSON(res, getTimesheetMatrix());
+  if (url === '/api/timesheets/today' && method === 'GET') {
+    return sendJSON(res, getTodayTimesheets());
   }
 
-  // --- предстоящие смены ---
-  if (url === '/api/timesheets/upcoming' && method === 'GET') {
-    return sendJSON(res, getUpcomingShifts());
+  if (url === '/api/timesheets/past' && method === 'GET') {
+    return sendJSON(res, getPastShifts());
   }
 
-  // --- все табели (включая удалённые) ---
+  if (url.startsWith('/api/timesheets/past/') && method === 'GET') {
+    const slug = url.replace('/api/timesheets/past/', '').split('?')[0];
+    return sendJSON(res, getPastShiftDetail(slug));
+  }
+
   if (url === '/api/timesheets/all' && method === 'GET') {
     return sendJSON(res, getAllTimesheets());
   }
 
-  // --- список активных табелей ---
   if (url === '/api/timesheets' && method === 'GET') {
     return sendJSON(res, getActiveTimesheets());
   }
 
-  // --- создание табеля ---
   if (url === '/api/timesheets' && method === 'POST') {
     const body = await parseBody(req);
     if (!body.inspector || !body.workplace) return sendJSON(res, { error: 'Заполните все поля' }, 400);
     try {
-      const checkTime = getCurrentCheckTime();
-      const duplicate = findDuplicate(checkTime.time, body.workplace);
+      const shiftSlug = body.shift === 'II' ? 'II' : 'I';
+      const timeLabel = makeTimeLabel(shiftSlug);
+      const duplicate = findDuplicate(timeLabel, body.workplace);
       if (duplicate) return sendJSON(res, { error: `Рабочее место ${body.workplace} уже занято (${duplicate.inspector}). Обновите страницу.` }, 409);
 
-      const filename = makeFilename(body.workplace);
-      logAction(`Создание табеля (незаполненный): ${checkTime.time}, место ${body.workplace}`, `Файл: /api/timesheets/${filename}, проверяющий: ${body.inspector}`);
+      const filename = makeFilename(body.workplace, shiftSlug);
+      logAction(`Создание табеля (незаполненный): ${timeLabel}, место ${body.workplace}`, `Файл: /api/timesheets/${filename}, проверяющий: ${body.inspector}`);
 
-      const data = { time: checkTime.time, inspector: body.inspector, workplace: body.workplace, scores: {}, totalScore: 0, percent: 0 };
+      const data = { time: timeLabel, inspector: body.inspector, workplace: body.workplace, scores: {}, totalScore: 0, percent: 0 };
       fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2), { flag: 'wx' });
       return sendJSON(res, { filename, ...data }, 201);
     } catch (err) {
@@ -190,7 +254,6 @@ async function apiRouter(req, res) {
     }
   }
 
-  // --- получение одного табеля ---
   if (url.startsWith('/api/timesheets/') && !url.endsWith('/restore') && !url.endsWith('/all') && method === 'GET') {
     const filename = url.replace('/api/timesheets/', '').split('?')[0];
     const filePath = getTimesheetPath(filename);
@@ -203,7 +266,6 @@ async function apiRouter(req, res) {
     }
   }
 
-  // --- сохранение оценок ---
   if (url.startsWith('/api/timesheets/') && method === 'PUT') {
     const filename = url.replace('/api/timesheets/', '').split('?')[0];
     const filePath = getTimesheetPath(filename);
@@ -211,7 +273,6 @@ async function apiRouter(req, res) {
     try {
       if (!fs.existsSync(filePath)) return sendJSON(res, { error: 'Not found' }, 404);
       const body = await parseBody(req);
-
       const criteria = loadConfig().criteria;
       for (const crit of criteria) {
         const val = body.scores[crit.id];
@@ -219,7 +280,6 @@ async function apiRouter(req, res) {
           return sendJSON(res, { error: `Недопустимое значение для критерия ${crit.id}: ${val}` }, 400);
         }
       }
-
       const existing = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       existing.scores = body.scores;
       if (body.totalScore != null) existing.totalScore = body.totalScore;
@@ -231,7 +291,6 @@ async function apiRouter(req, res) {
     }
   }
 
-  // --- удаление табеля ---
   if (url.startsWith('/api/timesheets/') && method === 'DELETE') {
     const filename = url.replace('/api/timesheets/', '').split('?')[0];
     const filePath = getTimesheetPath(filename);
@@ -248,7 +307,6 @@ async function apiRouter(req, res) {
     }
   }
 
-  // --- восстановление удалённого табеля ---
   if (url.startsWith('/api/timesheets/') && url.endsWith('/restore') && method === 'POST') {
     const filename = url.replace('/api/timesheets/', '').replace('/restore', '').split('?')[0];
     const deletedPath = path.join(DATA_DIR, filename);
@@ -264,34 +322,35 @@ async function apiRouter(req, res) {
     }
   }
 
-  // --- серверное время ---
   if (url === '/api/server-time' && method === 'GET') {
     return sendJSON(res, getServerTime());
   }
 
-  // --- конфиг ---
   if (url === '/api/config' && method === 'GET') {
     return sendJSON(res, loadConfig());
   }
 
-  // --- перезагрузка конфига ---
   if (url === '/api/config/reload' && method === 'POST') {
     return sendJSON(res, { ok: true, config: reloadConfig() });
   }
 
-  // --- сводный отчёт ---
   if (url === '/api/report' && method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(generateReport());
   }
 
-  // --- лог ---
+  if (url.startsWith('/api/report/') && method === 'GET') {
+    const slug = url.replace('/api/report/', '').split('?')[0];
+    const html = generateShiftReport(slug);
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    return res.end(html);
+  }
+
   if (url === '/api/log' && method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(generateLog());
   }
 
-  // 404
   res.writeHead(404);
   res.end('API Not found');
 }

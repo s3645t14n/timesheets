@@ -43,34 +43,16 @@ body {
 .server-time {
   position: absolute;
   left: 12px;
-  color: rgba(255,255,255,0.7);
-  font-size: 10px;
-  font-weight: normal;
+  color: rgba(255,255,255,0.9);
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
-.btn-home {
-  position: absolute;
-  right: 12px;
-  color: #fff;
-  text-decoration: none;
-  font-size: 22px;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-}
-
-.btn-home:hover {
-  background: rgba(255,255,255,0.15);
-}
-
 .btn-guide {
   position: absolute;
-  right: 52px;
+  right: 16px;
   color: #fff;
   text-decoration: none;
   font-size: 15px;
@@ -106,16 +88,50 @@ body {
   background: rgba(255,255,255,0.15);
 }
 
-.btn-header-icon[title="Конфиг"] { right: 160px; }
-.btn-header-icon[title="Отчет"] { right: 128px; }
-.btn-header-icon[title="Журнал"] { right: 96px; }
+.btn-header-icon[title="Конфиг"] { right: 120px; }
+.btn-header-icon[title="Отчет"] { right: 88px; }
+.btn-header-icon[title="Журнал"] { right: 56px; }
 
-/* --- Контейнеры --- */
+/* --- Панель вкладок --- */
+.tab-bar {
+  display: flex;
+  background: #fff;
+  border-bottom: 2px solid #e0e0e0;
+  position: fixed;
+  top: 44px;
+  left: 0;
+  width: 100%;
+  z-index: 99;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: bold;
+  color: #999;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab.active {
+  color: #2c3e50;
+  border-bottom-color: #2c3e50;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* --- Контейнер --- */
 .container {
   max-width: 480px;
   margin: 0 auto;
   padding: 8px;
-  padding-top: 52px;
+  padding-top: 96px;
   padding-bottom: 80px;
 }
 
@@ -123,53 +139,66 @@ body {
   max-width: 480px;
 }
 
-/* --- Адаптивная сетка табелей --- */
-.timesheets-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-
 @media (min-width: 600px) {
-  .timesheets-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
   .container { max-width: 620px; }
 }
 
 @media (min-width: 960px) {
-  .timesheets-grid { grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; }
   .container { max-width: 960px; }
 }
 
+/* --- Сегодняшние табели --- */
+#today-timesheets {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+@media (min-width: 600px) {
+  #today-timesheets { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 960px) {
+  #today-timesheets { grid-template-columns: repeat(6, 1fr); }
+}
+
 /* --- Заголовки групп --- */
-.group-heading {
-  font-size: 14px;
-  color: #2c3e50;
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  grid-column: 1 / -1;
   margin: 12px 0 6px;
   padding-bottom: 3px;
   border-bottom: 2px solid #2c3e50;
-  grid-column: 1 / -1;
 }
 
-.group-heading.past-group {
-  color: #777;
-  border-bottom-color: #ddd;
+.group-heading {
+  font-size: 14px;
+  color: #2c3e50;
+  margin: 0;
+  padding: 0;
+  border: none;
 }
 
-.closed-badge {
-  font-size: 11px;
-  font-weight: normal;
-  color: #999;
+.btn-report-shift {
+  text-decoration: none;
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-report-shift:hover {
+  background: #eee;
 }
 
 /* --- Карточка табеля --- */
 .timesheet-item {
-  background: #fff;
   border-radius: 6px;
   padding: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
   cursor: pointer;
   max-width: 100%;
   min-width: 0;
@@ -177,32 +206,44 @@ body {
   gap: 4px;
 }
 
-.timesheet-item:active {
-  background: #eee;
+/* --- Статусы табелей --- */
+.status-complete { background: #2e7d32; }
+.status-complete .detail,
+.status-complete .dates { color: #fff; }
+
+.status-incomplete { background: #f9a825; }
+.status-incomplete .detail,
+.status-incomplete .dates { color: #333; }
+
+.status-missing { background: #c62828; }
+.status-missing .detail { color: #fff; }
+
+.status-past-complete {
+  background: #546e7a;
+  cursor: default;
+  border-radius: 4px;
+  box-shadow: none;
 }
-
-.status-complete { border-left: 3px solid #4caf50; background: #e8f5e9; }
-.status-incomplete { border-left: 3px solid #ffc107; background: #fffde7; }
-.status-missing { border-left: 3px solid #e74c3c; background: #fff5f5; }
-.status-past-complete { border-left: 3px solid #6c757d; background: #e9ecef; cursor: default; }
-.status-past-incomplete { border-left: 3px solid #adb5bd; background: #e9ecef; cursor: default; }
-.status-past-missing { border-left: 3px solid #ced4da; background: #f1f3f5; cursor: default; }
-
 .status-past-complete .detail,
-.status-past-incomplete .detail,
-.status-past-missing .detail { color: #555; }
+.status-past-complete .dates { color: #fff; }
 
-.status-past-complete .dates,
-.status-past-incomplete .dates,
-.status-past-missing .dates { color: #777; }
-
-.status-badge {
-  font-size: 16px;
-  margin-left: 4px;
-  flex-shrink: 0;
-  width: 24px;
-  text-align: center;
+.status-past-incomplete {
+  background: #78909c;
+  cursor: default;
+  border-radius: 4px;
+  box-shadow: none;
 }
+.status-past-incomplete .detail,
+.status-past-incomplete .dates { color: #fff; }
+
+.status-past-missing {
+  background: #b0bec5;
+  cursor: default;
+  border-radius: 4px;
+  box-shadow: none;
+}
+.status-past-missing .detail,
+.status-past-missing .dates { color: #fff; }
 
 .timesheet-info {
   flex: 1;
@@ -212,7 +253,6 @@ body {
 
 .timesheet-info .detail {
   font-size: 12px;
-  color: #666;
   margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
@@ -221,7 +261,6 @@ body {
 
 .timesheet-info .dates {
   font-size: 10px;
-  color: #999;
   margin-top: 2px;
   line-height: 1.2;
   white-space: nowrap;
@@ -229,50 +268,58 @@ body {
   text-overflow: ellipsis;
 }
 
-.total-badge {
-  font-size: 11px;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-top: 2px;
-}
-
 /* --- Кнопки в карточках --- */
 .btn-create-ts,
 .btn-continue,
-.btn-edit,
-.btn-delete,
-.btn-restore {
+.btn-edit {
   border: none;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border-radius: 4px;
   font-size: 11px;
   cursor: pointer;
   margin-left: 4px;
   flex-shrink: 0;
+  white-space: nowrap;
+  min-width: 56px;
+  text-align: center;
 }
 
-.btn-create-ts { background: #e74c3c; color: #fff; }
-.btn-create-ts:active { background: #c0392b; }
-.btn-continue { background: #ffc107; color: #333; }
-.btn-continue:active { background: #e0a800; }
-.btn-edit { background: #4caf50; color: #fff; }
-.btn-edit:active { background: #388e3c; }
-.btn-delete { background: #e74c3c; color: #fff; }
-.btn-delete:active { background: #c0392b; }
-.btn-restore { background: #27ae60; color: #fff; }
-.btn-restore:active { background: #1e8449; }
+.btn-create-ts { background: #fff; color: #c62828; font-weight: bold; }
+.btn-create-ts:active { background: #eee; }
+.btn-continue { background: #333; color: #fff; }
+.btn-continue:active { background: #111; }
+.btn-edit { background: #fff; color: #2e7d32; font-weight: bold; }
+.btn-edit:active { background: #eee; }
 
-/* --- Удалённый табель --- */
-.timesheet-item.deleted {
-  opacity: 0.5;
-  border-left: 3px solid #999;
+/* --- Группа прошедшей смены --- */
+.past-group {
+  margin-bottom: 20px;
 }
 
-.deleted-badge {
-  color: #999;
-  font-size: 11px;
-  font-weight: bold;
-  margin-top: 2px;
+.past-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.past-group-title {
+  font-size: 15px;
+  color: #2c3e50;
+}
+
+.past-group-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+@media (min-width: 600px) {
+  .past-group-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 960px) {
+  .past-group-grid { grid-template-columns: repeat(6, 1fr); }
 }
 
 /* --- Формы --- */
@@ -331,7 +378,6 @@ select:focus, input:focus {
   background: #2ecc71;
   color: #fff;
 }
-
 #btn-new:active, #btn-create:active, #btn-save:active { background: #27ae60; }
 
 #btn-cancel { background: #95a5a6; color: #fff; }
@@ -351,7 +397,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   font-size: 14px;
 }
-
 #meta .meta-row { margin-bottom: 4px; }
 #meta .meta-label { color: #888; }
 
@@ -363,26 +408,21 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   margin-bottom: 6px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
-
 .criterion.scored {
   background: #e8f5e9;
   border-left: 4px solid #4caf50;
 }
-
 .criterion-name { font-weight: bold; font-size: 15px; margin-bottom: 2px; }
-
 .criterion-desc {
   font-size: 12px;
   color: #888;
   margin-bottom: 8px;
   line-height: 1.3;
 }
-
 .max-score { font-size: 12px; color: #999; font-weight: normal; }
 
 .radio-group { display: flex; gap: 12px; }
 .radio-option { flex: 1; }
-
 .radio-option label {
   display: flex;
   flex-direction: column;
@@ -394,16 +434,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   font-size: 16px;
   text-align: center;
 }
-
 .radio-option label:has(input:checked) { background: #e8f5e9; }
-
 .radio-option input[type="radio"] {
   width: 20px;
   height: 20px;
   accent-color: #3498db;
   flex-shrink: 0;
 }
-
 .option-desc {
   font-size: 11px;
   color: #666;
@@ -417,7 +454,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   color: #999;
   padding: 40px 0;
   font-size: 15px;
-  grid-column: 1 / -1;
 }
 
 /* --- Плавающие кнопки скролла --- */
@@ -430,7 +466,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   gap: 8px;
   z-index: 200;
 }
-
 .scroll-buttons button {
   width: 48px;
   height: 48px;
@@ -445,13 +480,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   align-items: center;
   justify-content: center;
 }
-
 .scroll-buttons button:active { background: #1a252f; }
 
 /* --- Плавающее окошко итогового балла --- */
 .total-score-widget {
   position: fixed;
-  top: 48px;
+  top: 96px;
   right: 12px;
   background: #2c3e50;
   color: #fff;
@@ -462,29 +496,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   z-index: 150;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-
-/* --- Уведомления о предстоящих сменах --- */
-#upcoming-notices {
-  margin-bottom: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.notice-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: #e3f2fd;
-  border-left: 2px solid #2196f3;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 11px;
-}
-
-.notice-icon { font-size: 12px; }
-.notice-text { color: #333; }
-.notice-time { color: #999; }
 
 /* --- Описание страницы --- */
 .page-desc {
@@ -501,7 +512,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   font-size: 12px;
   color: #999;
 }
-
 .app-footer a { color: #999; text-decoration: none; }
 .app-footer a:visited { color: #999; }
 .app-footer a:hover { text-decoration: underline; }
