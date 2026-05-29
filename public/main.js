@@ -52,7 +52,9 @@ async function loadToday() {
         return `
         <div class="timesheet-item ${statusClass} clickable" ${clickAction}>
           <div class="timesheet-info">
-            <div class="detail">🖵 M.${escapeHtml(wp.workplace)}</div>
+            <div class="detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 2px;">
+  <path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/>
+</svg> M.${escapeHtml(wp.workplace)}</div>
             ${wp.exists ? `<div class="dates">${escapeHtml(wp.timesheet.inspector)} · ${wp.timesheet.totalScore != null ? wp.timesheet.totalScore.toFixed(1) : '—'}${wp.timesheet.percent != null ? ' (' + wp.timesheet.percent + '%)' : ''}${wp.timesheet.grade != null ? ' · ' + wp.timesheet.grade : ''}</div>` : ''}
           </div>
           <div class="status-icon">${icon}</div>
@@ -105,7 +107,9 @@ async function loadPast() {
         html += `
         <div class="timesheet-item ${statusClass}">
           <div class="timesheet-info">
-            <div class="detail">🖵 M.${escapeHtml(wp.workplace)}</div>
+            <div class="detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 2px;">
+  <path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/>
+</svg> M.${escapeHtml(wp.workplace)}</div>
             ${info}
           </div>
         </div>`;
