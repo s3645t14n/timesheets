@@ -164,6 +164,41 @@ async function initClock() {
   } catch (err) {}
 }
 
+// Свайп для переключения вкладок
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', (e) => {
+  touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener('touchend', (e) => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const minSwipeDistance = 60;
+  const swipeDistance = touchEndX - touchStartX;
+
+  if (Math.abs(swipeDistance) < minSwipeDistance) return;
+
+  const tabs = document.querySelectorAll('.tab');
+  const activeTab = document.querySelector('.tab.active');
+
+  if (!activeTab || tabs.length < 2) return;
+
+  const currentIndex = Array.from(tabs).indexOf(activeTab);
+
+  if (swipeDistance < 0 && currentIndex < tabs.length - 1) {
+    // Свайп влево — следующая вкладка
+    tabs[currentIndex + 1].click();
+  } else if (swipeDistance > 0 && currentIndex > 0) {
+    // Свайп вправо — предыдущая вкладка
+    tabs[currentIndex - 1].click();
+  }
+}
+
 initClock();
 loadToday();
 loadPast();

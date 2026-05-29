@@ -112,8 +112,8 @@ function getTodayTimesheets() {
   const { dateSlug, dateDisplay } = getCurrentDateSlug();
 
   const shifts = [
-    { slug: 'II', label: '2 смена' },
-    { slug: 'I', label: '1 смена' }
+    { slug: 'I', label: '1 смена' },
+    { slug: 'II', label: '2 смена' }
   ];
 
   const result = [];
