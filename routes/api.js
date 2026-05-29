@@ -111,6 +111,30 @@ function getReportData(timeLabel, items, workplaces) {
     }
     return row;
   });
+
+  const totalRow = ['ИТОГО'];
+  for (const wp of workplaces) {
+    const item = items.find(ts => ts.workplace === wp);
+    totalRow.push(item && item.totalScore != null ? item.totalScore.toFixed(1) : '');
+  }
+  rows.push(totalRow);
+
+  const percentRow = ['% от максимума'];
+  for (const wp of workplaces) {
+    const item = items.find(ts => ts.workplace === wp);
+    percentRow.push(item && item.percent != null ? item.percent + '%' : '');
+  }
+  rows.push(percentRow);
+
+  const gradeRow = ['Оценка'];
+  for (const wp of workplaces) {
+    const item = items.find(ts => ts.workplace === wp);
+    let grade = '';
+    if (item && item.grade != null) grade = String(item.grade);
+    gradeRow.push(grade);
+  }
+  rows.push(gradeRow);
+
   return { title: timeLabel, columns, rows };
 }
 
@@ -248,7 +272,6 @@ async function apiRouter(req, res) {
     return sendJSON(res, { ok: true, config: reloadConfig() });
   }
 
-  // --- ведомость: данные JSON для DataTables ---
   if (url.startsWith('/api/report/') && url.endsWith('/data') && method === 'GET') {
     const slug = url.replace('/api/report/', '').replace('/data', '').split('?')[0];
     const [year, month, day, shiftSlug] = slug.split('_');
@@ -271,10 +294,13 @@ async function apiRouter(req, res) {
       }
     }
 
+    if (items.length === 0) {
+      return sendJSON(res, { empty: true, title: timeLabel });
+    }
+
     return sendJSON(res, getReportData(timeLabel, items, workplaces));
   }
 
-  // --- ведомость: HTML для печати (общая или сменная) ---
   if (url.startsWith('/api/report/') && method === 'GET') {
     const slug = url.replace('/api/report/', '').split('?')[0];
     const [year, month, day, shiftSlug] = slug.split('_');
@@ -302,7 +328,6 @@ async function apiRouter(req, res) {
     return res.end(html);
   }
 
-  // --- сводный отчёт (все смены) ---
   if (url === '/api/report' && method === 'GET') {
     const config = loadConfig();
     const allTimesheets = getActiveTimesheets();
@@ -326,7 +351,6 @@ async function apiRouter(req, res) {
     return res.end(html);
   }
 
-  // --- общая ведомость: данные JSON для DataTables ---
   if (url === '/api/report/data' && method === 'GET') {
     const config = loadConfig();
     const allTimesheets = getActiveTimesheets();

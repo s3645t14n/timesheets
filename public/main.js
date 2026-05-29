@@ -23,7 +23,7 @@ async function loadToday() {
     let html = '';
 
     for (const group of groups) {
-      const reportUrl = `/report-view.html?src=/api/report/${encodeURIComponent(group.dateSlug)}_${encodeURIComponent(group.shiftSlug)}`;
+      const reportUrl = `/report-view.html?src=/api/report/${encodeURIComponent(group.dateSlug)}_${encodeURIComponent(group.shiftSlug)}/data`;
 
       html += `<div class="group-header">
         <h2 class="group-heading">${escapeHtml(group.timeLabel)}</h2>
@@ -84,7 +84,7 @@ async function loadPast() {
     let html = '';
 
     for (const shift of shifts) {
-      const reportUrl = `/report-view.html?src=/api/report/${encodeURIComponent(shift.slug)}`;
+      const reportUrl = `/report-view.html?src=/api/report/${encodeURIComponent(shift.slug)}/data`;
 
       html += `<div class="past-group">
         <div class="past-group-header">
