@@ -12,6 +12,7 @@ const btnScrollBottom = document.getElementById('btn-scroll-bottom');
 const btnScrollUnfilled = document.getElementById('btn-scroll-unfilled');
 const params = new URLSearchParams(window.location.search);
 const filename = params.get('file');
+const inspectorParam = params.get('inspector');
 
 let timesheetData = null;
 let configData = null;
@@ -24,6 +25,29 @@ async function loadData() {
     ]);
     timesheetData = await tsRes.json();
     configData = await cfgRes.json();
+
+    // Обновление ФИО
+    if (inspectorParam && inspectorParam !== timesheetData.inspector) {
+      timesheetData.inspector = inspectorParam;
+      const payload = { scores: timesheetData.scores, totalScore: timesheetData.totalScore, percent: timesheetData.percent, grade: timesheetData.grade, inspector: inspectorParam };
+      await fetch(`/api/timesheets/${encodeURIComponent(filename)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    // Логирование открытия
+    await fetch('/api/log/open', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: filename,
+        inspector: timesheetData.inspector,
+        wasComplete: timesheetData.complete
+      })
+    });
+
     render();
   } catch (err) {
     alert('Не удалось загрузить данные.');
@@ -68,6 +92,12 @@ async function autoSave() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scores, totalScore, percent, grade })
+    });
+
+    await fetch('/api/log/score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: filename, inspector: timesheetData.inspector, scores: scores })
     });
   } catch (err) {}
 }
@@ -151,9 +181,7 @@ btnScrollTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior:
 btnScrollBottom.addEventListener('click', () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
 btnScrollUnfilled.addEventListener('click', () => {
   const unscored = document.querySelector('.criterion:not(.scored)');
-  if (unscored) {
-    unscored.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+  if (unscored) unscored.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
 function render() { renderMeta(); renderCriteria(); updateFooter(); }

@@ -46,11 +46,11 @@ async function loadToday() {
         if (wp.exists && wp.complete) {
           statusClass = 'status-complete';
           icon = '✓';
-          clickAction = `onclick="event.stopPropagation();if(confirm('Табель рабочего места ${escapeHtml(wp.workplace)} смены «${escapeHtml(group.shift)}» уже заполнен экспертом ${escapeHtml(wp.timesheet.inspector)}. Точно хотите изменить его?'))window.location.href='/edit.html?file=${encodeURIComponent(wp.filename)}'"`;
+          clickAction = `onclick="event.stopPropagation();const name=prompt('Введите ФИО проверяющего:','${escapeHtml(wp.timesheet.inspector)}');if(name)window.location.href='/edit.html?file=${encodeURIComponent(wp.filename)}&inspector='+encodeURIComponent(name)"`;
         } else if (wp.exists && !wp.complete) {
           statusClass = 'status-incomplete';
           icon = '✎';
-          clickAction = `onclick="event.stopPropagation();window.location.href='/edit.html?file=${encodeURIComponent(wp.filename)}'"`;
+          clickAction = `onclick="event.stopPropagation();const name=prompt('Введите ФИО проверяющего:','${escapeHtml(wp.timesheet.inspector)}');if(name)window.location.href='/edit.html?file=${encodeURIComponent(wp.filename)}&inspector='+encodeURIComponent(name)"`;
         }
 
         return `

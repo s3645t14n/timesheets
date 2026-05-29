@@ -367,6 +367,21 @@ async function apiRouter(req, res) {
     return res.end(html);
   }
 
+  if (url === '/api/log/open' && method === 'POST') {
+    const body = await parseBody(req);
+    const action = body.wasComplete
+      ? `Открытие заполненного табеля на изменение: ${body.filename}`
+      : `Открытие незаполненного табеля на заполнение: ${body.filename}`;
+    logAction(action, `Проверяющий: ${body.inspector}`);
+    return sendJSON(res, { ok: true });
+  }
+
+  if (url === '/api/log/score' && method === 'POST') {
+    const body = await parseBody(req);
+    logAction(`Изменение оценок: ${body.filename}`, `Проверяющий: ${body.inspector}, оценки: ${JSON.stringify(body.scores)}`);
+    return sendJSON(res, { ok: true });
+  }
+
   res.writeHead(404);
   res.end('API Not found');
 }
